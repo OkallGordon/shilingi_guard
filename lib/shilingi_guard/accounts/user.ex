@@ -4,12 +4,15 @@ defmodule ShilingiGuard.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :full_name, :string
+    field :phone_number, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
     has_many :incomes, ShilingiGuard.Finance.Income
+    has_many :allocations, ShilingiGuard.Finance.Allocation
 
     timestamps(type: :utc_datetime)
   end
@@ -26,10 +29,17 @@ defmodule ShilingiGuard.Accounts.User do
       Defaults to `true`.
   """
   def email_changeset(user, attrs, opts \\ []) do
-    user
-    |> cast(attrs, [:email])
-    |> validate_email(opts)
-  end
+  user
+  |> cast(attrs, [:email])
+  |> validate_email(opts)
+end
+
+def registration_changeset(user, attrs, opts \\ []) do
+  user
+  |> cast(attrs, [:full_name, :email, :phone_number])
+  |> validate_required([:full_name, :email, :phone_number])
+  |> validate_email(opts)
+end
 
   defp validate_email(changeset, opts) do
     changeset =

@@ -11,18 +11,27 @@ defmodule ShilingiGuardWeb.UserLive.Registration do
       <div class="mx-auto max-w-sm">
         <div class="text-center">
           <.header>
-            Register for an account
+            Create your Shilingi Guard account
             <:subtitle>
               Already registered?
               <.link navigate={~p"/users/log-in"} class="font-semibold text-brand hover:underline">
                 Log in
               </.link>
-              to your account now.
+              to your account.
             </:subtitle>
           </.header>
         </div>
 
         <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
+          <.input
+            field={@form[:full_name]}
+            type="text"
+            label="Full name"
+            autocomplete="name"
+            required
+            phx-mounted={JS.focus()}
+          />
+
           <.input
             field={@form[:email]}
             type="email"
@@ -30,7 +39,31 @@ defmodule ShilingiGuardWeb.UserLive.Registration do
             autocomplete="username"
             spellcheck="false"
             required
-            phx-mounted={JS.focus()}
+          />
+
+          <.input
+            field={@form[:phone_number]}
+            type="tel"
+            label="Phone number"
+            autocomplete="tel"
+            placeholder="e.g. 0712345678"
+            required
+          />
+
+          <.input
+            field={@form[:password]}
+            type="password"
+            label="Password"
+            autocomplete="new-password"
+            required
+          />
+
+          <.input
+            field={@form[:password_confirmation]}
+            type="password"
+            label="Confirm password"
+            autocomplete="new-password"
+            required
           />
 
           <.button phx-disable-with="Creating account..." class="btn btn-primary w-full">
@@ -49,7 +82,10 @@ defmodule ShilingiGuardWeb.UserLive.Registration do
   end
 
   def mount(_params, _session, socket) do
-    changeset = Accounts.change_user_email(%User{}, %{}, validate_unique: false)
+    changeset =
+      %User{}
+      |> User.email_changeset(%{}, validate_unique: false)
+      |> User.password_changeset(%{}, hash_password: false)
 
     {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
   end
@@ -77,9 +113,15 @@ defmodule ShilingiGuardWeb.UserLive.Registration do
     end
   end
 
+  @impl true
   def handle_event("validate", %{"user" => user_params}, socket) do
-    changeset = Accounts.change_user_email(%User{}, user_params, validate_unique: false)
-    {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
+    changeset =
+      %User{}
+      |> User.email_changeset(user_params, validate_unique: false)
+      |> User.password_changeset(user_params, hash_password: false)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign_form(socket, changeset)}
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do

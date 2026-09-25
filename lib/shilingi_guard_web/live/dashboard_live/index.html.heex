@@ -1,0 +1,112 @@
+<div class="min-h-screen bg-base-200">
+  <div class="mx-auto max-w-6xl px-6 py-12">
+    <div class="mb-12">
+      <p class="text-sm font-semibold uppercase tracking-widest text-primary">
+        Shilingi Guard
+      </p>
+
+      <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
+        Take control of your money.
+      </h1>
+
+      <p class="mt-4 max-w-2xl text-lg text-base-content/70">
+        Welcome back, <%= @current_scope.user.full_name %>.
+        Allocate your income, set spending limits, and protect the money
+        you've already committed to your priorities.
+      </p>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-3">
+      <div class="rounded-2xl bg-base-100 p-6 shadow-sm">
+        <p class="text-sm text-base-content/60">Today's spendable money</p>
+        <p class="mt-3 text-3xl font-bold">KSh 0</p>
+        <p class="mt-2 text-sm text-base-content/60">
+          We'll calculate this from your allocations.
+        </p>
+      </div>
+
+      <div class="rounded-2xl bg-base-100 p-6 shadow-sm">
+        <p class="text-sm text-base-content/60">Monthly income</p>
+        <p class="mt-3 text-3xl font-bold">
+          KSh <%= Decimal.to_string(@monthly_income) %>
+        </p>
+        <p class="mt-2 text-sm text-base-content/60">
+          Income received this month
+        </p>
+      </div>
+
+      <div class="rounded-2xl bg-base-100 p-6 shadow-sm">
+        <p class="text-sm text-base-content/60">Protected money</p>
+        <p class="mt-3 text-3xl font-bold">KSh 0</p>
+        <p class="mt-2 text-sm text-base-content/60">
+          We'll calculate this from your commitments.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-8 rounded-2xl bg-base-100 p-8 shadow-sm">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold">Your income</h2>
+
+        <.link
+          navigate={~p"/income"}
+          class="font-semibold text-primary hover:underline"
+        >
+          Manage income
+        </.link>
+      </div>
+
+      <%= if @incomes == [] do %>
+        <div class="mt-6 rounded-xl border border-dashed border-base-300 p-6 text-center">
+          <p class="font-semibold">No income recorded yet.</p>
+
+          <p class="mt-2 text-sm text-base-content/60">
+            Add your income so Shilingi Guard can start helping you allocate it.
+          </p>
+
+          <.link
+            navigate={~p"/income"}
+            class="btn btn-primary mt-4"
+          >
+            Add your first income
+          </.link>
+        </div>
+      <% else %>
+        <div class="mt-6 space-y-4">
+          <%= for income <- @incomes do %>
+            <div class="flex items-center justify-between border-b border-base-300 pb-4">
+              <div>
+                <p class="font-semibold">
+                  <%= income.source %>
+                </p>
+
+                <p class="text-sm text-base-content/60">
+                  Received on <%= income.received_on %>
+                </p>
+              </div>
+
+              <p class="font-bold">
+                KSh <%= income.amount %>
+              </p>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="mt-8 rounded-2xl bg-base-100 p-8 shadow-sm">
+      <h2 class="text-2xl font-bold">Your spending rules</h2>
+
+      <div class="mt-6 rounded-xl border border-dashed border-base-300 p-6 text-center">
+        <p class="font-semibold">
+          No spending rules yet.
+        </p>
+
+        <p class="mt-2 text-sm text-base-content/60">
+          Soon you'll be able to decide exactly how much of your income
+          can be spent on food, transport, shopping, savings, and other priorities.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

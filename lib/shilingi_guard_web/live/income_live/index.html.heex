@@ -1,0 +1,84 @@
+<div class="mx-auto max-w-4xl">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-zinc-900">
+      Your Income
+    </h1>
+
+    <p class="mt-2 text-zinc-600">
+      Keep track of the money coming into Shilingi Guard.
+    </p>
+  </div>
+
+  <div class="mb-8 rounded-lg bg-white p-6 shadow">
+    <h2 class="text-xl font-semibold text-zinc-900">
+      Add Income
+    </h2>
+
+    <.form for={@form} id="income-form" phx-change="validate" phx-submit="save">
+      <div class="mt-4">
+        <.input
+          field={@form[:amount]}
+          type="number"
+          label="Amount"
+          step="0.01"
+          placeholder="e.g. 30000"
+        />
+      </div>
+
+      <div class="mt-4">
+        <.input
+          field={@form[:source]}
+          type="text"
+          label="Source"
+          placeholder="e.g. Salary"
+        />
+      </div>
+
+      <div class="mt-4">
+        <.input
+          field={@form[:received_on]}
+          type="date"
+          label="Received on"
+        />
+      </div>
+
+      <div class="mt-6">
+        <.button>
+          Save Income
+        </.button>
+      </div>
+    </.form>
+  </div>
+
+  <div class="rounded-lg bg-white p-6 shadow">
+    <h2 class="text-xl font-semibold text-zinc-900">
+      Recorded Income
+    </h2>
+
+    <%= if @incomes == [] do %>
+      <p class="mt-4 text-zinc-500">
+        You haven't recorded any income yet.
+      </p>
+    <% else %>
+      <div class="mt-4 space-y-3">
+        <%= for income <- @incomes do %>
+          <div class="flex items-center justify-between border-b border-zinc-200 py-3">
+            <div>
+              <p class="font-medium text-zinc-900">
+                <%= income.source %>
+              </p>
+
+              <p class="text-sm text-zinc-500">
+                Received on <%= income.received_on %>
+              </p>
+            </div>
+
+            <p class="font-semibold text-zinc-900">
+              KSh <%= income.amount %>
+            </p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

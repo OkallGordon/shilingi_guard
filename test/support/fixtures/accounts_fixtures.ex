@@ -13,10 +13,14 @@ defmodule ShilingiGuard.AccountsFixtures do
   def valid_user_password, do: "hello world!"
 
   def valid_user_attributes(attrs \\ %{}) do
-    Enum.into(attrs, %{
-      email: unique_user_email()
-    })
-  end
+  Enum.into(attrs, %{
+    full_name: "Test User",
+    email: unique_user_email(),
+    phone_number: "0712345678",
+    password: valid_user_password(),
+    password_confirmation: valid_user_password()
+  })
+end
 
   def unconfirmed_user_fixture(attrs \\ %{}) do
     {:ok, user} =
