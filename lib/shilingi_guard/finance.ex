@@ -8,6 +8,7 @@ defmodule ShilingiGuard.Finance do
 
   import Ecto.Query, warn: false
 
+  alias ShilingiGuard.Accounts.Scope
   alias ShilingiGuard.Finance.Allocation
   alias ShilingiGuard.Finance.Income
   alias ShilingiGuard.Repo
@@ -47,27 +48,29 @@ defmodule ShilingiGuard.Finance do
   # --------------------
 
   @doc """
-  Returns all allocations belonging to the given user.
+  Returns all allocations belonging to the user in the given scope.
   """
-  def list_allocations(user) do
+  def list_allocations(%Scope{user: user}) do
     Allocation
     |> where([allocation], allocation.user_id == ^user.id)
     |> Repo.all()
+    |> Repo.preload(:user)
   end
 
   @doc """
-  Gets a single allocation belonging to the given user.
+  Gets a single allocation belonging to the user in the given scope.
   """
-  def get_allocation!(user, id) do
+  def get_allocation!(%Scope{user: user}, id) do
     Allocation
     |> where([allocation], allocation.user_id == ^user.id)
     |> Repo.get!(id)
+    |> Repo.preload(:user)
   end
 
   @doc """
-  Creates a new allocation for the given user.
+  Creates a new allocation for the user in the given scope.
   """
-  def create_allocation(user, attrs \\ %{}) do
+  def create_allocation(%Scope{user: user}, attrs \\ %{}) do
     %Allocation{}
     |> Allocation.changeset(attrs)
     |> Ecto.Changeset.put_assoc(:user, user)
@@ -75,9 +78,13 @@ defmodule ShilingiGuard.Finance do
   end
 
   @doc """
-  Updates an allocation belonging to the given user.
+  Updates an allocation belonging to the user in the given scope.
   """
-  def update_allocation(user, %Allocation{} = allocation, attrs) do
+  def update_allocation(
+        %Scope{user: user},
+        %Allocation{} = allocation,
+        attrs
+      ) do
     true = allocation.user_id == user.id
 
     allocation
@@ -86,9 +93,12 @@ defmodule ShilingiGuard.Finance do
   end
 
   @doc """
-  Deletes an allocation belonging to the given user.
+  Deletes an allocation belonging to the user in the given scope.
   """
-  def delete_allocation(user, %Allocation{} = allocation) do
+  def delete_allocation(
+        %Scope{user: user},
+        %Allocation{} = allocation
+      ) do
     true = allocation.user_id == user.id
 
     Repo.delete(allocation)
@@ -97,7 +107,13 @@ defmodule ShilingiGuard.Finance do
   @doc """
   Returns a changeset for tracking allocation changes.
   """
-  def change_allocation(%Allocation{} = allocation, attrs \\ %{}) do
+  def change_allocation(
+        %Scope{user: user},
+        %Allocation{} = allocation,
+        attrs \\ %{}
+      ) do
+    true = allocation.user_id == user.id
+
     Allocation.changeset(allocation, attrs)
   end
 end

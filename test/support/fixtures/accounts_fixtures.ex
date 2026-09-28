@@ -8,39 +8,49 @@ defmodule ShilingiGuard.AccountsFixtures do
 
   alias ShilingiGuard.Accounts
   alias ShilingiGuard.Accounts.Scope
+  alias ShilingiGuard.Accounts.User
+  alias ShilingiGuard.Repo
 
   def unique_user_email, do: "user#{System.unique_integer()}@example.com"
   def valid_user_password, do: "hello world!"
 
   def valid_user_attributes(attrs \\ %{}) do
-  Enum.into(attrs, %{
-    full_name: "Test User",
-    email: unique_user_email(),
-    phone_number: "0712345678",
-    password: valid_user_password(),
-    password_confirmation: valid_user_password()
-  })
-end
+    Enum.into(attrs, %{
+      full_name: "Test User",
+      email: unique_user_email(),
+      phone_number: "0712345678",
+      password: valid_user_password(),
+      password_confirmation: valid_user_password()
+    })
+  end
 
   def unconfirmed_user_fixture(attrs \\ %{}) do
-    {:ok, user} =
+    attrs =
       attrs
-      |> valid_user_attributes()
-      |> Accounts.register_user()
+      |> Enum.into(%{
+        full_name: "Test User",
+        email: unique_user_email(),
+        phone_number: "0712345678"
+      })
+
+    {:ok, user} =
+      %User{}
+      |> User.registration_changeset(attrs)
+      |> Repo.insert()
 
     user
   end
 
   def user_fixture(attrs \\ %{}) do
-    user = unconfirmed_user_fixture(attrs)
+    {:ok, user} =
+      attrs
+      |> valid_user_attributes()
+      |> Accounts.register_user()
 
-    token =
-      extract_user_token(fn url ->
-        Accounts.deliver_login_instructions(user, url)
-      end)
-
-    {:ok, {user, _expired_tokens}} =
-      Accounts.login_user_by_magic_link(token)
+    {:ok, user} =
+      user
+      |> Ecto.Changeset.change(confirmed_at: DateTime.utc_now(:second))
+      |> Repo.update()
 
     user
   end
@@ -68,7 +78,7 @@ end
   end
 
   def override_token_authenticated_at(token, authenticated_at) when is_binary(token) do
-    ShilingiGuard.Repo.update_all(
+    Repo.update_all(
       from(t in Accounts.UserToken,
         where: t.token == ^token
       ),
@@ -78,14 +88,14 @@ end
 
   def generate_user_magic_link_token(user) do
     {encoded_token, user_token} = Accounts.UserToken.build_email_token(user, "login")
-    ShilingiGuard.Repo.insert!(user_token)
+    Repo.insert!(user_token)
     {encoded_token, user_token.token}
   end
 
   def offset_user_token(token, amount_to_add, unit) do
     dt = DateTime.add(DateTime.utc_now(:second), amount_to_add, unit)
 
-    ShilingiGuard.Repo.update_all(
+    Repo.update_all(
       from(ut in Accounts.UserToken, where: ut.token == ^token),
       set: [inserted_at: dt, authenticated_at: dt]
     )

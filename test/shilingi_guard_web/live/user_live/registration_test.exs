@@ -8,7 +8,7 @@ defmodule ShilingiGuardWeb.UserLive.RegistrationTest do
     test "renders registration page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/register")
 
-      assert html =~ "Register"
+      assert html =~ "Create your Shilingi Guard account"
       assert html =~ "Log in"
     end
 
@@ -30,7 +30,7 @@ defmodule ShilingiGuardWeb.UserLive.RegistrationTest do
         |> element("#registration_form")
         |> render_change(user: %{"email" => "with spaces"})
 
-      assert result =~ "Register"
+      assert result =~ "Create your Shilingi Guard account"
       assert result =~ "must have the @ sign and no spaces"
     end
   end

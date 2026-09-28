@@ -84,8 +84,8 @@ defmodule ShilingiGuardWeb.UserLive.Registration do
   def mount(_params, _session, socket) do
     changeset =
       %User{}
-      |> User.email_changeset(%{}, validate_unique: false)
-      |> User.password_changeset(%{}, hash_password: false)
+        |> User.registration_changeset(%{}, validate_unique: false)
+        |> User.password_changeset(%{}, hash_password: false)
 
     {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
   end
@@ -116,10 +116,10 @@ defmodule ShilingiGuardWeb.UserLive.Registration do
   @impl true
   def handle_event("validate", %{"user" => user_params}, socket) do
     changeset =
-      %User{}
-      |> User.email_changeset(user_params, validate_unique: false)
-      |> User.password_changeset(user_params, hash_password: false)
-      |> Map.put(:action, :validate)
+     %User{}
+        |> User.registration_changeset(user_params, validate_unique: false)
+        |> User.password_changeset(user_params, hash_password: false)
+        |> Map.put(:action, :validate)
 
     {:noreply, assign_form(socket, changeset)}
   end

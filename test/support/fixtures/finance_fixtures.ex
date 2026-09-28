@@ -12,7 +12,7 @@ defmodule ShilingiGuard.FinanceFixtures do
       Enum.into(attrs, %{
         amount: "120.5",
         name: "some name",
-        type: "some type"
+        type: "spending"
       })
 
     {:ok, allocation} = ShilingiGuard.Finance.create_allocation(scope, attrs)

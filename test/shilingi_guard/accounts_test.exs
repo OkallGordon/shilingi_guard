@@ -77,11 +77,18 @@ defmodule ShilingiGuard.AccountsTest do
       assert "has already been taken" in errors_on(changeset).email
     end
 
-    test "registers users without password" do
+    test "registers users with a password" do
       email = unique_user_email()
-      {:ok, user} = Accounts.register_user(valid_user_attributes(email: email))
+
+      {:ok, user} =
+        Accounts.register_user(
+          valid_user_attributes(email: email)
+        )
+
       assert user.email == email
-      assert is_nil(user.hashed_password)
+      assert user.full_name == "Test User"
+      assert user.phone_number == "0712345678"
+      refute is_nil(user.hashed_password)
       assert is_nil(user.confirmed_at)
       assert is_nil(user.password)
     end
@@ -183,7 +190,7 @@ defmodule ShilingiGuard.AccountsTest do
   describe "change_user_password/3" do
     test "returns a user changeset" do
       assert %Ecto.Changeset{} = changeset = Accounts.change_user_password(%User{})
-      assert changeset.required == [:password]
+       assert changeset.required == [:password]
     end
 
     test "allows fields to be set" do
