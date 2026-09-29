@@ -52,6 +52,8 @@ defmodule ShilingiGuardWeb.Router do
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
 
       live "/income", IncomeLive.Index, :index
+      live "/spending-rules", SpendingRuleLive.Index, :index
+      live "/allocations", AllocationLive.Index, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password

@@ -2,6 +2,7 @@ defmodule ShilingiGuard.FinanceTest do
   use ShilingiGuard.DataCase
 
   alias ShilingiGuard.AccountsFixtures
+  alias ShilingiGuard.FinanceFixtures
   alias ShilingiGuard.Finance
 
   describe "incomes" do
@@ -175,4 +176,273 @@ defmodule ShilingiGuard.FinanceTest do
                Finance.change_allocation(scope, allocation)
     end
   end
-end
+
+  describe "spending rules" do
+    test "creates a spending rule for an allocation" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "300",
+        allocation_id: allocation.id
+      }
+
+      assert {:ok, spending_rule} =
+               Finance.create_spending_rule(scope, attrs)
+
+      assert spending_rule.period == "daily"
+      assert Decimal.equal?(spending_rule.limit_amount, Decimal.new("300"))
+      assert spending_rule.user_id == scope.user.id
+      assert spending_rule.allocation_id == allocation.id
+    end
+
+    test "does not allow a user to create a rule for another user's allocation" do
+      scope = AccountsFixtures.user_scope_fixture()
+      other_scope = AccountsFixtures.user_scope_fixture()
+
+      other_allocation = FinanceFixtures.allocation_fixture(other_scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "300",
+        allocation_id: other_allocation.id
+      }
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Finance.create_spending_rule(scope, attrs)
+      end
+    end
+
+    test "rejects an invalid spending rule period" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "yearly",
+        limit_amount: "300",
+        allocation_id: allocation.id
+      }
+
+      assert {:error, changeset} =
+               Finance.create_spending_rule(scope, attrs)
+
+      assert "is invalid" in errors_on(changeset).period
+    end
+  end
+    test "rejects a zero spending rule limit" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "0",
+        allocation_id: allocation.id
+      }
+
+      assert {:error, changeset} =
+               Finance.create_spending_rule(scope, attrs)
+
+      assert "must be greater than 0" in errors_on(changeset).limit_amount
+    end
+
+    test "rejects a negative spending rule limit" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "-100",
+        allocation_id: allocation.id
+      }
+
+      assert {:error, changeset} =
+               Finance.create_spending_rule(scope, attrs)
+
+      assert "must be greater than 0" in errors_on(changeset).limit_amount
+    end
+
+    test "rejects a spending rule without period and limit" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        allocation_id: allocation.id
+      }
+
+      assert {:error, changeset} =
+               Finance.create_spending_rule(scope, attrs)
+
+      errors = errors_on(changeset)
+
+      assert "can't be blank" in errors.period
+      assert "can't be blank" in errors.limit_amount
+    end
+
+    test "creates a weekly spending rule" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "weekly",
+        limit_amount: "1500",
+        allocation_id: allocation.id
+      }
+
+      assert {:ok, spending_rule} =
+               Finance.create_spending_rule(scope, attrs)
+
+      assert spending_rule.period == "weekly"
+      assert Decimal.equal?(spending_rule.limit_amount, Decimal.new("1500"))
+    end
+
+    test "creates a monthly spending rule" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "monthly",
+        limit_amount: "2000",
+        allocation_id: allocation.id
+      }
+
+      assert {:ok, spending_rule} =
+               Finance.create_spending_rule(scope, attrs)
+
+      assert spending_rule.period == "monthly"
+      assert Decimal.equal?(spending_rule.limit_amount, Decimal.new("2000"))
+    end
+
+    test "lists spending rules belonging to the user" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "300",
+        allocation_id: allocation.id
+      }
+
+      {:ok, spending_rule} = Finance.create_spending_rule(scope, attrs)
+
+      assert [listed_rule] = Finance.list_spending_rules(scope)
+      assert listed_rule.id == spending_rule.id
+      assert listed_rule.period == "daily"
+      assert Decimal.equal?(listed_rule.limit_amount, Decimal.new("300"))
+    end
+
+    test "gets a spending rule belonging to the user" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "300",
+        allocation_id: allocation.id
+      }
+
+      {:ok, spending_rule} = Finance.create_spending_rule(scope, attrs)
+
+      fetched_rule =
+        Finance.get_spending_rule!(scope, spending_rule.id)
+
+      assert fetched_rule.id == spending_rule.id
+      assert fetched_rule.period == "daily"
+      assert Decimal.equal?(fetched_rule.limit_amount, Decimal.new("300"))
+      assert fetched_rule.allocation_id == allocation.id
+      assert fetched_rule.user_id == scope.user.id
+    end
+
+    test "updates a spending rule belonging to the user" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "300",
+        allocation_id: allocation.id
+      }
+
+      {:ok, spending_rule} = Finance.create_spending_rule(scope, attrs)
+
+      update_attrs = %{
+        period: "weekly",
+        limit_amount: "1500"
+      }
+
+      assert {:ok, updated_rule} =
+               Finance.update_spending_rule(scope, spending_rule, update_attrs)
+
+      assert updated_rule.id == spending_rule.id
+      assert updated_rule.period == "weekly"
+      assert Decimal.equal?(updated_rule.limit_amount, Decimal.new("1500"))
+      assert updated_rule.allocation_id == allocation.id
+      assert updated_rule.user_id == scope.user.id
+    end
+
+    test "deletes a spending rule belonging to the user" do
+      scope = AccountsFixtures.user_scope_fixture()
+      allocation = FinanceFixtures.allocation_fixture(scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "300",
+        allocation_id: allocation.id
+      }
+
+      {:ok, spending_rule} = Finance.create_spending_rule(scope, attrs)
+
+      assert {:ok, deleted_rule} =
+               Finance.delete_spending_rule(scope, spending_rule)
+
+      assert deleted_rule.id == spending_rule.id
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Finance.get_spending_rule!(scope, spending_rule.id)
+      end
+    end
+
+    test "does not allow a user to update another user's spending rule" do
+      scope = AccountsFixtures.user_scope_fixture()
+      other_scope = AccountsFixtures.user_scope_fixture()
+
+      allocation = FinanceFixtures.allocation_fixture(other_scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "300",
+        allocation_id: allocation.id
+      }
+
+      {:ok, spending_rule} =
+        Finance.create_spending_rule(other_scope, attrs)
+
+      assert_raise MatchError, fn ->
+        Finance.update_spending_rule(
+          scope,
+          spending_rule,
+          %{limit_amount: "500"}
+        )
+      end
+    end
+
+    test "does not allow a user to delete another user's spending rule" do
+      scope = AccountsFixtures.user_scope_fixture()
+      other_scope = AccountsFixtures.user_scope_fixture()
+
+      allocation = FinanceFixtures.allocation_fixture(other_scope)
+
+      attrs = %{
+        period: "daily",
+        limit_amount: "300",
+        allocation_id: allocation.id
+      }
+
+      {:ok, spending_rule} =
+        Finance.create_spending_rule(other_scope, attrs)
+
+      assert_raise MatchError, fn ->
+        Finance.delete_spending_rule(scope, spending_rule)
+      end
+    end
+  end
