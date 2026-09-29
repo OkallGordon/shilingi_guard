@@ -18,4 +18,23 @@ defmodule ShilingiGuard.FinanceFixtures do
     {:ok, allocation} = ShilingiGuard.Finance.create_allocation(scope, attrs)
     allocation
   end
+
+  @doc """
+  Generate a spending rule.
+  """
+  def spending_rule_fixture(scope, attrs \\ %{}) do
+    allocation = allocation_fixture(scope)
+
+    attrs =
+      Enum.into(attrs, %{
+        allocation_id: allocation.id,
+        period: "daily",
+        limit_amount: "50.0"
+      })
+
+    {:ok, spending_rule} =
+      ShilingiGuard.Finance.create_spending_rule(scope, attrs)
+
+    spending_rule
+  end
 end
