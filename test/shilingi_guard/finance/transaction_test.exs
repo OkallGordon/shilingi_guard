@@ -8,7 +8,8 @@ defmodule ShilingiGuard.Finance.TransactionTest do
       changeset =
         Transaction.changeset(%Transaction{}, %{
           amount: "150.00",
-          description: "Lunch"
+          description: "Lunch",
+          occurred_at: ~U[2026-09-30 08:00:00Z]
         })
 
       assert changeset.valid?
@@ -17,7 +18,8 @@ defmodule ShilingiGuard.Finance.TransactionTest do
     test "requires amount" do
       changeset =
         Transaction.changeset(%Transaction{}, %{
-          description: "Lunch"
+          description: "Lunch",
+          occurred_at: ~U[2026-09-30 08:00:00Z]
         })
 
       refute changeset.valid?
@@ -34,11 +36,23 @@ defmodule ShilingiGuard.Finance.TransactionTest do
       assert %{description: ["can't be blank"]} = errors_on(changeset)
     end
 
+    test "requires occurred_at" do
+     changeset =
+       Transaction.changeset(%Transaction{}, %{
+        amount: "150.00",
+        description: "Lunch"
+      })
+
+     refute changeset.valid?
+    assert %{occurred_at: ["can't be blank"]} = errors_on(changeset)
+  end
+
     test "rejects zero amount" do
       changeset =
         Transaction.changeset(%Transaction{}, %{
           amount: "0",
-          description: "Lunch"
+          description: "Lunch",
+          occurred_at: ~U[2026-09-30 08:00:00Z]
         })
 
       refute changeset.valid?
@@ -49,7 +63,8 @@ defmodule ShilingiGuard.Finance.TransactionTest do
       changeset =
         Transaction.changeset(%Transaction{}, %{
           amount: "-50",
-          description: "Lunch"
+          description: "Lunch",
+          occurred_at: ~U[2026-09-30 08:00:00Z]
         })
 
       refute changeset.valid?

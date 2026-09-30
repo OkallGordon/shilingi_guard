@@ -47,7 +47,8 @@ def transaction_fixture(scope, attrs \\ %{}) do
     Enum.into(attrs, %{
       allocation_id: allocation.id,
       amount: "50.0",
-      description: "some description"
+      description: "some description",
+      occurred_at: ~U[2026-09-30 08:00:00Z]
     })
 
   {:ok, transaction} =
