@@ -37,4 +37,22 @@ defmodule ShilingiGuard.FinanceFixtures do
 
     spending_rule
   end
+  @doc """
+Generate a transaction.
+"""
+def transaction_fixture(scope, attrs \\ %{}) do
+  allocation = allocation_fixture(scope)
+
+  attrs =
+    Enum.into(attrs, %{
+      allocation_id: allocation.id,
+      amount: "50.0",
+      description: "some description"
+    })
+
+  {:ok, transaction} =
+    ShilingiGuard.Finance.create_transaction(scope, attrs)
+
+  transaction
+end
 end

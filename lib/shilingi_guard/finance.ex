@@ -13,6 +13,7 @@ defmodule ShilingiGuard.Finance do
   alias ShilingiGuard.Finance.Income
   alias ShilingiGuard.Finance.SpendingRule
   alias ShilingiGuard.Repo
+  alias ShilingiGuard.Finance.Transaction
 
   # --------------------
   # Income
@@ -196,4 +197,88 @@ end
       ) do
     SpendingRule.changeset(spending_rule, attrs)
       end
+
+      # --------------------
+       # Transactions
+      # --------------------
+
+@doc """
+Returns all transactions belonging to the user in the given scope.
+"""
+def list_transactions(%Scope{user: user}) do
+  Transaction
+  |> where([transaction], transaction.user_id == ^user.id)
+  |> Repo.all()
+  |> Repo.preload([:user, :allocation])
+end
+
+@doc """
+Gets a single transaction belonging to the user in the given scope.
+"""
+def get_transaction!(%Scope{user: user}, id) do
+  Transaction
+  |> where([transaction], transaction.user_id == ^user.id)
+  |> Repo.get!(id)
+  |> Repo.preload([:user, :allocation])
+end
+
+@doc """
+Creates a transaction for the user in the given scope.
+"""
+def create_transaction(%Scope{user: user}, attrs \\ %{}) do
+  allocation_id =
+    Map.get(attrs, "allocation_id") || Map.get(attrs, :allocation_id)
+
+  allocation =
+    Allocation
+    |> where(
+      [allocation],
+      allocation.id == ^allocation_id and allocation.user_id == ^user.id
+    )
+    |> Repo.one!()
+
+  %Transaction{}
+  |> Transaction.changeset(attrs)
+  |> Ecto.Changeset.put_assoc(:user, user)
+  |> Ecto.Changeset.put_assoc(:allocation, allocation)
+  |> Repo.insert()
+end
+
+@doc """
+Updates a transaction belonging to the user in the given scope.
+"""
+def update_transaction(
+      %Scope{user: user},
+      %Transaction{} = transaction,
+      attrs
+    ) do
+  true = transaction.user_id == user.id
+
+  transaction
+  |> Transaction.changeset(attrs)
+  |> Repo.update()
+end
+
+@doc """
+Deletes a transaction belonging to the user in the given scope.
+"""
+def delete_transaction(
+      %Scope{user: user},
+      %Transaction{} = transaction
+    ) do
+  true = transaction.user_id == user.id
+
+  Repo.delete(transaction)
+end
+
+@doc """
+Returns a changeset for tracking transaction changes.
+"""
+def change_transaction(
+      %Scope{user: _user},
+      %Transaction{} = transaction,
+      attrs \\ %{}
+    ) do
+  Transaction.changeset(transaction, attrs)
+end
 end

@@ -9,6 +9,7 @@ defmodule ShilingiGuard.Finance.Allocation do
 
     belongs_to :user, ShilingiGuard.Accounts.User
     has_many :spending_rules, ShilingiGuard.Finance.SpendingRule
+    has_many :transactions, ShilingiGuard.Finance.Transaction
 
     timestamps(type: :utc_datetime)
   end

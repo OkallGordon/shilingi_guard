@@ -14,6 +14,7 @@ defmodule ShilingiGuard.Accounts.User do
     has_many :incomes, ShilingiGuard.Finance.Income
     has_many :allocations, ShilingiGuard.Finance.Allocation
     has_many :spending_rules, ShilingiGuard.Finance.SpendingRule
+    has_many :transactions, ShilingiGuard.Finance.Transaction
 
     timestamps(type: :utc_datetime)
   end

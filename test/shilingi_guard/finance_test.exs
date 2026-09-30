@@ -1,6 +1,9 @@
 defmodule ShilingiGuard.FinanceTest do
   use ShilingiGuard.DataCase
 
+  import ShilingiGuard.FinanceFixtures
+  import ShilingiGuard.AccountsFixtures
+
   alias ShilingiGuard.AccountsFixtures
   alias ShilingiGuard.FinanceFixtures
   alias ShilingiGuard.Finance
@@ -445,4 +448,128 @@ defmodule ShilingiGuard.FinanceTest do
         Finance.delete_spending_rule(scope, spending_rule)
       end
     end
+
+    describe "transactions" do
+
+      setup do
+        %{scope: user_scope_fixture()}
+      end
+    test "lists transactions belonging to the user", %{scope: scope} do
+      transaction = transaction_fixture(scope)
+
+    assert Finance.list_transactions(scope) == [transaction]
+  end
+
+  test "does not list another user's transactions", %{scope: scope} do
+    other_scope = user_scope_fixture()
+
+    transaction_fixture(other_scope)
+
+    assert Finance.list_transactions(scope) == []
+  end
+
+  test "gets a transaction belonging to the user", %{scope: scope} do
+    transaction = transaction_fixture(scope)
+
+    assert Finance.get_transaction!(scope, transaction.id) == transaction
+  end
+
+  test "cannot get another user's transaction", %{scope: scope} do
+    other_scope = user_scope_fixture()
+    transaction = transaction_fixture(other_scope)
+
+    assert_raise Ecto.NoResultsError, fn ->
+      Finance.get_transaction!(scope, transaction.id)
+    end
+  end
+
+  test "creates a transaction for the user's allocation", %{scope: scope} do
+    allocation =
+      allocation_fixture(scope, %{
+        name: "Food",
+        amount: "9000",
+        type: "spending"
+      })
+
+    assert {:ok, transaction} =
+             Finance.create_transaction(scope, %{
+               allocation_id: allocation.id,
+               amount: "150",
+               description: "Lunch"
+             })
+
+    assert transaction.user_id == scope.user.id
+    assert transaction.allocation_id == allocation.id
+    assert Decimal.equal?(transaction.amount, Decimal.new("150"))
+    assert transaction.description == "Lunch"
+  end
+
+  test "cannot create a transaction for another user's allocation", %{
+    scope: scope
+  } do
+    other_scope = user_scope_fixture()
+
+    other_allocation =
+      allocation_fixture(other_scope, %{
+        name: "Other user's Food",
+        amount: "9000",
+        type: "spending"
+      })
+
+    assert_raise Ecto.NoResultsError, fn ->
+      Finance.create_transaction(scope, %{
+        allocation_id: other_allocation.id,
+        amount: "150",
+        description: "Lunch"
+      })
+    end
+
+    assert Finance.list_transactions(scope) == []
+  end
+
+  test "updates a user's transaction", %{scope: scope} do
+    transaction = transaction_fixture(scope)
+
+    assert {:ok, updated_transaction} =
+             Finance.update_transaction(scope, transaction, %{
+               amount: "200",
+               description: "Dinner"
+             })
+
+    assert Decimal.equal?(updated_transaction.amount, Decimal.new("200"))
+    assert updated_transaction.description == "Dinner"
+  end
+
+  test "cannot update another user's transaction", %{scope: scope} do
+    other_scope = user_scope_fixture()
+    transaction = transaction_fixture(other_scope)
+
+    assert_raise MatchError, fn ->
+      Finance.update_transaction(scope, transaction, %{
+        amount: "200",
+        description: "Dinner"
+      })
+    end
+  end
+
+  test "deletes a user's transaction", %{scope: scope} do
+    transaction = transaction_fixture(scope)
+
+    assert {:ok, _deleted_transaction} =
+             Finance.delete_transaction(scope, transaction)
+
+    assert_raise Ecto.NoResultsError, fn ->
+      Finance.get_transaction!(scope, transaction.id)
+    end
+  end
+
+  test "cannot delete another user's transaction", %{scope: scope} do
+    other_scope = user_scope_fixture()
+    transaction = transaction_fixture(other_scope)
+
+    assert_raise MatchError, fn ->
+      Finance.delete_transaction(scope, transaction)
+      end
+    end
+   end
   end
