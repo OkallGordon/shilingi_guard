@@ -486,6 +486,30 @@ end
       %{scope: user_scope_fixture()}
     end
 
+ test "does not allow transactions against protected allocations", %{scope: scope} do
+  allocation =
+    FinanceFixtures.allocation_fixture(scope, %{
+      type: "protected",
+      amount: "20000.0"
+    })
+
+  FinanceFixtures.spending_rule_fixture(scope, %{
+    allocation_id: allocation.id,
+    period: "daily",
+    limit_amount: "300.0"
+  })
+
+  assert {:error, changeset} =
+           Finance.create_transaction(scope, %{
+             allocation_id: allocation.id,
+             amount: "50.0",
+             description: "Attempted protected spending",
+             occurred_at: ~U[2026-09-30 08:00:00Z]
+           })
+
+  assert "protected allocations cannot be spent" in
+           errors_on(changeset).allocation_id
+end
     test "lists transactions belonging to the user", %{scope: scope} do
       transaction = transaction_fixture(scope)
 

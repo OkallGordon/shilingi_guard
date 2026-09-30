@@ -226,19 +226,29 @@ defmodule ShilingiGuard.Finance do
   Creates a transaction for the user in the given scope.
   """
   def create_transaction(%Scope{user: user} = scope, attrs \\ %{}) do
-    allocation_id = Map.get(attrs, "allocation_id") || Map.get(attrs, :allocation_id)
+  allocation_id = Map.get(attrs, "allocation_id") || Map.get(attrs, :allocation_id)
 
-    allocation =
-      Allocation
-      |> where([allocation], allocation.id == ^allocation_id and allocation.user_id == ^user.id)
-      |> Repo.one!()
+  allocation =
+    Allocation
+    |> where([allocation], allocation.id == ^allocation_id and allocation.user_id == ^user.id)
+    |> Repo.one!()
 
+  changeset =
+    %Transaction{}
+    |> Transaction.changeset(attrs)
+    |> Ecto.Changeset.put_assoc(:user, user)
+    |> Ecto.Changeset.put_assoc(:allocation, allocation)
+
+  if allocation.type == "protected" do
     changeset =
-      %Transaction{}
-      |> Transaction.changeset(attrs)
-      |> Ecto.Changeset.put_assoc(:user, user)
-      |> Ecto.Changeset.put_assoc(:allocation, allocation)
+      Ecto.Changeset.add_error(
+        changeset,
+        :allocation_id,
+        "protected allocations cannot be spent"
+      )
 
+    {:error, changeset}
+  else
     if changeset.valid? do
       transaction = Ecto.Changeset.apply_changes(changeset)
 
@@ -274,6 +284,7 @@ defmodule ShilingiGuard.Finance do
       {:error, changeset}
     end
   end
+end
 
  defp check_spending_rules(
        %Scope{user: user} = scope,
