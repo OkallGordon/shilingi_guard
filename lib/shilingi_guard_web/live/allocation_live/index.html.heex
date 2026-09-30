@@ -109,14 +109,14 @@
               <div class="rounded-xl border border-base-300 p-4">
                 <div class="flex items-start justify-between gap-4">
                   <div>
-                    <h3 class="font-semibold"><%= allocation.name %></h3>
+                    <h3 class="font-semibold">{allocation.name}</h3>
 
                     <p class="mt-1 text-sm text-base-content/60">
-                      <%= String.capitalize(allocation.type) %>
+                      {String.capitalize(allocation.type)}
                     </p>
 
                     <p class="mt-2 text-lg font-semibold">
-                      KSh <%= Decimal.to_string(allocation.amount) %>
+                      KSh {Decimal.to_string(allocation.amount)}
                     </p>
                   </div>
 

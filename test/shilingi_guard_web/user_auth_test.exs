@@ -146,7 +146,8 @@ defmodule ShilingiGuardWeb.UserAuthTest do
     test "authenticates user from session", %{conn: conn, user: user} do
       user_token = Accounts.generate_user_session_token(user)
 
-      conn = conn |> put_session(:user_token, user_token) |> UserAuth.fetch_current_scope_for_user([])
+      conn =
+        conn |> put_session(:user_token, user_token) |> UserAuth.fetch_current_scope_for_user([])
 
       assert conn.assigns.current_scope.user.id == user.id
       assert conn.assigns.current_scope.user.authenticated_at == user.authenticated_at

@@ -65,16 +65,16 @@
           <div class="flex items-center justify-between border-b border-zinc-200 py-3">
             <div>
               <p class="font-medium text-zinc-900">
-                <%= income.source %>
+                {income.source}
               </p>
 
               <p class="text-sm text-zinc-500">
-                Received on <%= income.received_on %>
+                Received on {income.received_on}
               </p>
             </div>
 
             <p class="font-semibold text-zinc-900">
-              KSh <%= income.amount %>
+              KSh {income.amount}
             </p>
           </div>
         <% end %>

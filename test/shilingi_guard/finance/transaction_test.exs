@@ -37,15 +37,15 @@ defmodule ShilingiGuard.Finance.TransactionTest do
     end
 
     test "requires occurred_at" do
-     changeset =
-       Transaction.changeset(%Transaction{}, %{
-        amount: "150.00",
-        description: "Lunch"
-      })
+      changeset =
+        Transaction.changeset(%Transaction{}, %{
+          amount: "150.00",
+          description: "Lunch"
+        })
 
-     refute changeset.valid?
-    assert %{occurred_at: ["can't be blank"]} = errors_on(changeset)
-  end
+      refute changeset.valid?
+      assert %{occurred_at: ["can't be blank"]} = errors_on(changeset)
+    end
 
     test "rejects zero amount" do
       changeset =

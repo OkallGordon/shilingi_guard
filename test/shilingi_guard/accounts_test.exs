@@ -55,6 +55,33 @@ defmodule ShilingiGuard.AccountsTest do
       assert %{email: ["can't be blank"]} = errors_on(changeset)
     end
 
+    test "accepts supported timezones" do
+     changeset =
+    User.registration_changeset(%User{}, %{
+      full_name: "John Doe",
+      email: "john@example.com",
+      phone_number: "0712345678",
+      password: "valid password 123",
+      timezone: "Africa/Nairobi"
+    })
+
+  assert changeset.valid?
+end
+
+test "rejects unsupported timezones" do
+  changeset =
+    User.registration_changeset(%User{}, %{
+      full_name: "John Doe",
+      email: "john@example.com",
+      phone_number: "0712345678",
+      password: "valid password 123",
+      timezone: "Nairobi"
+    })
+
+  refute changeset.valid?
+  assert "is invalid" in errors_on(changeset).timezone
+end
+
     test "validates email when given" do
       {:error, changeset} = Accounts.register_user(%{email: "not valid"})
 
@@ -81,9 +108,7 @@ defmodule ShilingiGuard.AccountsTest do
       email = unique_user_email()
 
       {:ok, user} =
-        Accounts.register_user(
-          valid_user_attributes(email: email)
-        )
+        Accounts.register_user(valid_user_attributes(email: email))
 
       assert user.email == email
       assert user.full_name == "Test User"
@@ -190,7 +215,7 @@ defmodule ShilingiGuard.AccountsTest do
   describe "change_user_password/3" do
     test "returns a user changeset" do
       assert %Ecto.Changeset{} = changeset = Accounts.change_user_password(%User{})
-       assert changeset.required == [:password]
+      assert changeset.required == [:password]
     end
 
     test "allows fields to be set" do

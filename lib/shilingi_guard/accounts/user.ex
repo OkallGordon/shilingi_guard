@@ -10,6 +10,7 @@ defmodule ShilingiGuard.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
+    field :timezone, :string, default: "Etc/UTC"
 
     has_many :incomes, ShilingiGuard.Finance.Income
     has_many :allocations, ShilingiGuard.Finance.Allocation
@@ -31,17 +32,35 @@ defmodule ShilingiGuard.Accounts.User do
       Defaults to `true`.
   """
   def email_changeset(user, attrs, opts \\ []) do
-  user
-  |> cast(attrs, [:email])
-  |> validate_email(opts)
-end
+    user
+    |> cast(attrs, [:email])
+    |> validate_email(opts)
+  end
 
-def registration_changeset(user, attrs, opts \\ []) do
-  user
-  |> cast(attrs, [:full_name, :email, :phone_number])
-  |> validate_required([:full_name, :email, :phone_number])
-  |> validate_email(opts)
-end
+  def registration_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:full_name, :email, :phone_number, :timezone])
+    |> validate_required([:full_name, :email, :phone_number])
+    |> validate_inclusion(:timezone, [
+      "Etc/UTC",
+      "Africa/Nairobi",
+      "Africa/Lagos",
+      "Africa/Cairo",
+      "Africa/Johannesburg",
+      "Europe/London",
+      "Europe/Paris",
+      "America/New_York",
+      "America/Chicago",
+      "America/Denver",
+      "America/Los_Angeles",
+      "Asia/Dubai",
+      "Asia/Kolkata",
+      "Asia/Singapore",
+      "Asia/Tokyo",
+      "Australia/Sydney"
+    ])
+    |> validate_email(opts)
+  end
 
   defp validate_email(changeset, opts) do
     changeset =
@@ -111,8 +130,8 @@ end
       changeset
       # If using Bcrypt, then further validate it is at most 72 bytes long
       |> validate_length(:password, max: 72, count: :bytes)
-      # Hashing could be done with `Ecto.Changeset.prepare_changes/2`, but that
-      # would keep the database transaction open longer and hurt performance.
+      # Hashing could be done with Ecto.Changeset.prepare_changes/2, but
+      # that would keep the database transaction open longer and hurt performance.
       |> put_change(:hashed_password, Bcrypt.hash_pwd_salt(password))
       |> delete_change(:password)
     else
@@ -134,7 +153,10 @@ end
   If there is no user or the user doesn't have a password, we call
   `Bcrypt.no_user_verify/0` to avoid timing attacks.
   """
-  def valid_password?(%ShilingiGuard.Accounts.User{hashed_password: hashed_password}, password)
+  def valid_password?(
+        %ShilingiGuard.Accounts.User{hashed_password: hashed_password},
+        password
+      )
       when is_binary(hashed_password) and byte_size(password) > 0 do
     Bcrypt.verify_pass(password, hashed_password)
   end

@@ -91,11 +91,13 @@ defmodule ShilingiGuardWeb.SpendingRuleLive.IndexTest do
 
       html =
         view
-        |> form("#spending_rule_form", spending_rule: %{
-          allocation_id: allocation.id,
-          period: "daily",
-          limit_amount: "0"
-        })
+        |> form("#spending_rule_form",
+          spending_rule: %{
+            allocation_id: allocation.id,
+            period: "daily",
+            limit_amount: "0"
+          }
+        )
         |> render_change()
 
       assert html =~ "must be greater than 0"
@@ -117,11 +119,13 @@ defmodule ShilingiGuardWeb.SpendingRuleLive.IndexTest do
 
       html =
         view
-        |> form("#spending_rule_form", spending_rule: %{
-          allocation_id: allocation.id,
-          period: "daily",
-          limit_amount: "300"
-        })
+        |> form("#spending_rule_form",
+          spending_rule: %{
+            allocation_id: allocation.id,
+            period: "daily",
+            limit_amount: "300"
+          }
+        )
         |> render_submit()
 
       assert html =~ "Spending rule created successfully."
@@ -150,11 +154,13 @@ defmodule ShilingiGuardWeb.SpendingRuleLive.IndexTest do
 
       html =
         view
-        |> form("#spending_rule_form", spending_rule: %{
-          allocation_id: allocation.id,
-          period: "daily",
-          limit_amount: "-100"
-        })
+        |> form("#spending_rule_form",
+          spending_rule: %{
+            allocation_id: allocation.id,
+            period: "daily",
+            limit_amount: "-100"
+          }
+        )
         |> render_submit()
 
       assert html =~ "must be greater than 0"
@@ -248,12 +254,14 @@ defmodule ShilingiGuardWeb.SpendingRuleLive.IndexTest do
       |> render_click()
 
       html =
-       view
-      |> form("#spending_rule_form", spending_rule: %{
-      period: "weekly",
-      limit_amount: "1000"
-       })
-      |> render_submit()
+        view
+        |> form("#spending_rule_form",
+          spending_rule: %{
+            period: "weekly",
+            limit_amount: "1000"
+          }
+        )
+        |> render_submit()
 
       assert html =~ "Spending rule updated successfully."
       assert html =~ "Weekly"

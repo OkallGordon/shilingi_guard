@@ -40,7 +40,8 @@
             label="Allocation"
             options={
               Enum.map(@allocations, fn allocation ->
-                {"#{allocation.name} — KSh #{Decimal.to_string(allocation.amount)}", allocation.id}
+                {"#{allocation.name} — KSh #{Decimal.to_string(allocation.amount)}",
+                 allocation.id}
               end)
             }
             prompt="Choose an allocation"
@@ -115,21 +116,21 @@
                 <div class="flex items-start justify-between gap-4">
                   <div>
                     <h3 class="font-semibold text-zinc-900">
-                      <%= rule.allocation.name %>
+                      {rule.allocation.name}
                     </h3>
 
                     <p class="mt-1 text-sm text-zinc-600">
-                      <%= String.capitalize(rule.period) %> limit
+                      {String.capitalize(rule.period)} limit
                     </p>
                   </div>
 
                   <div class="text-right">
                     <p class="text-lg font-bold text-zinc-900">
-                      KSh <%= Decimal.to_string(rule.limit_amount) %>
+                      KSh {Decimal.to_string(rule.limit_amount)}
                     </p>
 
                     <p class="text-xs text-zinc-500">
-                      per <%= rule.period %>
+                      per {rule.period}
                     </p>
                   </div>
                 </div>
