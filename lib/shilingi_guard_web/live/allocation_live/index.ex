@@ -99,6 +99,8 @@ defmodule ShilingiGuardWeb.AllocationLive.Index do
          |> put_flash(:info, "Allocation created successfully.")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
+        changeset = %{changeset | action: :insert}
+
         {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end
@@ -116,6 +118,8 @@ defmodule ShilingiGuardWeb.AllocationLive.Index do
          |> put_flash(:info, "Allocation updated successfully.")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
+        changeset = %{changeset | action: :update}
+
         {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end

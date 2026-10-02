@@ -16,7 +16,7 @@ defmodule ShilingiGuard.Finance.Income do
   @doc false
   def changeset(income, attrs) do
     income
-    |> cast(attrs, [:amount, :source, :received_on])
+    |> cast(attrs, [:amount, :source, :received_on, :budget_id])
     |> validate_required([:amount, :source, :received_on])
     |> validate_number(:amount, greater_than: 0)
   end

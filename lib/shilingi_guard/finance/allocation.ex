@@ -19,7 +19,7 @@ defmodule ShilingiGuard.Finance.Allocation do
   @doc false
   def changeset(allocation, attrs) do
     allocation
-    |> cast(attrs, [:name, :amount, :type])
+    |> cast(attrs, [:name, :amount, :type, :budget_id])
     |> validate_required([:name, :amount, :type])
     |> validate_number(:amount, greater_than: 0)
     |> validate_inclusion(:type, ["protected", "spending"])

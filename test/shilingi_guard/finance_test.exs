@@ -54,6 +54,33 @@ defmodule ShilingiGuard.FinanceTest do
 
       assert incomes_for_user_two == []
     end
+
+    test "does not allow income to be attached to another user's budget" do
+  user = AccountsFixtures.user_fixture()
+  scope = ShilingiGuard.Accounts.Scope.for_user(user)
+
+  other_user = AccountsFixtures.user_fixture()
+  other_scope = ShilingiGuard.Accounts.Scope.for_user(other_user)
+
+  assert {:ok, other_budget} =
+           Finance.create_budget(other_scope, %{
+             name: "Other User Budget",
+             starts_on: ~D[2026-09-01],
+             ends_on: ~D[2026-09-30],
+             status: "active"
+           })
+
+  assert {:error, changeset} =
+           Finance.create_income(scope.user, %{
+             amount: "1000.00",
+             source: "Salary",
+             received_on: ~D[2026-09-30],
+             budget_id: other_budget.id
+           })
+
+  assert "budget does not belong to this user" in
+           errors_on(changeset).budget_id
+   end
   end
 
   describe "allocations" do
@@ -130,6 +157,45 @@ defmodule ShilingiGuard.FinanceTest do
       assert allocation.amount == Decimal.new("456.7")
     end
 
+    test "does not allow total allocations to exceed total income in a budget" do
+  scope = user_scope_fixture()
+
+  assert {:ok, budget} =
+           Finance.create_budget(scope, %{
+             name: "September 2026",
+             starts_on: ~D[2026-09-01],
+             ends_on: ~D[2026-09-30],
+             status: "active"
+           })
+
+  assert {:ok, _income} =
+           Finance.create_income(scope.user, %{
+             amount: "1000.00",
+             source: "Salary",
+             received_on: ~D[2026-09-30],
+             budget_id: budget.id
+           })
+
+  assert {:ok, _first_allocation} =
+           Finance.create_allocation(scope, %{
+             name: "Food",
+             type: "spending",
+             amount: "700.00",
+             budget_id: budget.id
+           })
+
+  assert {:error, changeset} =
+           Finance.create_allocation(scope, %{
+             name: "Transport",
+             type: "spending",
+             amount: "400.00",
+             budget_id: budget.id
+           })
+
+  assert "total allocations cannot exceed total income" in
+           errors_on(changeset).amount
+end
+
     test "update_allocation/3 with invalid scope raises" do
       scope = user_scope_fixture()
       other_scope = user_scope_fixture()
@@ -179,6 +245,138 @@ defmodule ShilingiGuard.FinanceTest do
       assert %Ecto.Changeset{} =
                Finance.change_allocation(scope, allocation)
     end
+
+    test "does not allow an allocation to be attached to another user's budget" do
+  scope = user_scope_fixture()
+  other_scope = user_scope_fixture()
+
+  assert {:ok, other_budget} =
+           Finance.create_budget(other_scope, %{
+             name: "Other User Budget",
+             starts_on: ~D[2026-09-01],
+             ends_on: ~D[2026-09-30],
+             status: "active"
+           })
+
+  assert {:error, changeset} =
+           Finance.create_allocation(scope, %{
+             name: "Food",
+             type: "spending",
+             amount: "500.00",
+             budget_id: other_budget.id
+           })
+
+  assert "budget does not belong to this user" in
+           errors_on(changeset).budget_id
+   end
+
+   test "does not allow updating an allocation to exceed total income in a budget" do
+  scope = user_scope_fixture()
+
+  assert {:ok, budget} =
+           Finance.create_budget(scope, %{
+             name: "September 2026",
+             starts_on: ~D[2026-09-01],
+             ends_on: ~D[2026-09-30],
+             status: "active"
+           })
+
+  assert {:ok, _income} =
+           Finance.create_income(scope.user, %{
+             amount: "1000.00",
+             source: "Salary",
+             received_on: ~D[2026-09-30],
+             budget_id: budget.id
+           })
+
+  assert {:ok, food} =
+           Finance.create_allocation(scope, %{
+             name: "Food",
+             type: "spending",
+             amount: "600.00",
+             budget_id: budget.id
+           })
+
+  assert {:ok, _transport} =
+           Finance.create_allocation(scope, %{
+             name: "Transport",
+             type: "spending",
+             amount: "300.00",
+             budget_id: budget.id
+           })
+
+  assert {:error, changeset} =
+           Finance.update_allocation(scope, food, %{
+             amount: "800.00"
+           })
+
+  assert "total allocations cannot exceed total income" in
+           errors_on(changeset).amount
+    end
+
+    test "allows total allocations to equal total income in a budget" do
+  scope = user_scope_fixture()
+
+  assert {:ok, budget} =
+           Finance.create_budget(scope, %{
+             name: "September 2026",
+             starts_on: ~D[2026-09-01],
+             ends_on: ~D[2026-09-30],
+             status: "active"
+           })
+
+  assert {:ok, _income} =
+           Finance.create_income(scope.user, %{
+             amount: "1000.00",
+             source: "Salary",
+             received_on: ~D[2026-09-30],
+             budget_id: budget.id
+           })
+
+  assert {:ok, _allocation} =
+           Finance.create_allocation(scope, %{
+             name: "Monthly Expenses",
+             type: "spending",
+             amount: "1000.00",
+             budget_id: budget.id
+           })
+    end
+
+    test "sums multiple incomes when checking budget allocation limit" do
+  scope = user_scope_fixture()
+
+  assert {:ok, budget} =
+           Finance.create_budget(scope, %{
+             name: "September 2026",
+             starts_on: ~D[2026-09-01],
+             ends_on: ~D[2026-09-30],
+             status: "active"
+           })
+
+  assert {:ok, _first_income} =
+           Finance.create_income(scope.user, %{
+             amount: "1000.00",
+             source: "Salary",
+             received_on: ~D[2026-09-01],
+             budget_id: budget.id
+           })
+
+  assert {:ok, _second_income} =
+           Finance.create_income(scope.user, %{
+             amount: "500.00",
+             source: "Side Income",
+             received_on: ~D[2026-09-15],
+             budget_id: budget.id
+           })
+
+  assert {:ok, _allocation} =
+           Finance.create_allocation(scope, %{
+             name: "Expenses",
+             type: "spending",
+             amount: "1500.00",
+             budget_id: budget.id
+           })
+     end
   end
 
   describe "spending rules" do

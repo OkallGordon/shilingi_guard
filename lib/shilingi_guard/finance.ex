@@ -33,11 +33,37 @@ defmodule ShilingiGuard.Finance do
   Creates a new income record for the given user.
   """
   def create_income(user, attrs \\ %{}) do
+  budget_id = Map.get(attrs, "budget_id") || Map.get(attrs, :budget_id)
+
+  changeset =
     %Income{}
     |> Income.changeset(attrs)
     |> Ecto.Changeset.put_assoc(:user, user)
-    |> Repo.insert()
+
+  if budget_id do
+    budget =
+      Budget
+      |> where([budget], budget.id == ^budget_id and budget.user_id == ^user.id)
+      |> Repo.one()
+
+    case budget do
+      nil ->
+        Ecto.Changeset.add_error(
+          changeset,
+          :budget_id,
+          "budget does not belong to this user"
+        )
+        |> then(&{:error, &1})
+
+      budget ->
+        changeset
+        |> Ecto.Changeset.put_assoc(:budget, budget)
+        |> Repo.insert()
+    end
+  else
+    Repo.insert(changeset)
   end
+end
 
   @doc """
   Returns a changeset for tracking income changes.
@@ -73,27 +99,141 @@ defmodule ShilingiGuard.Finance do
   @doc """
   Creates a new allocation for the user in the given scope.
   """
-  def create_allocation(%Scope{user: user}, attrs \\ %{}) do
+ def create_allocation(%Scope{user: user}, attrs \\ %{}) do
+  budget_id = Map.get(attrs, "budget_id") || Map.get(attrs, :budget_id)
+
+  changeset =
     %Allocation{}
     |> Allocation.changeset(attrs)
     |> Ecto.Changeset.put_assoc(:user, user)
-    |> Repo.insert()
+
+  if changeset.valid? do
+    case budget_id do
+      nil ->
+        Repo.insert(changeset)
+
+      budget_id ->
+        budget =
+          Budget
+          |> where([budget], budget.id == ^budget_id and budget.user_id == ^user.id)
+          |> Repo.one()
+
+        case budget do
+          nil ->
+            Ecto.Changeset.add_error(
+              changeset,
+              :budget_id,
+              "budget does not belong to this user"
+            )
+            |> then(&{:error, &1})
+
+          budget ->
+            new_amount = Ecto.Changeset.get_field(changeset, :amount)
+
+            total_income =
+              Income
+              |> where([income], income.budget_id == ^budget.id)
+              |> select([income], coalesce(sum(income.amount), ^Decimal.new("0")))
+              |> Repo.one()
+
+            total_allocations =
+              Allocation
+              |> where([allocation], allocation.budget_id == ^budget.id)
+              |> select([allocation], coalesce(sum(allocation.amount), ^Decimal.new("0")))
+              |> Repo.one()
+
+            total_after_allocation =
+              Decimal.add(total_allocations, new_amount)
+
+            if Decimal.compare(total_after_allocation, total_income) == :gt do
+              Ecto.Changeset.add_error(
+                changeset,
+                :amount,
+                "total allocations cannot exceed total income"
+              )
+              |> then(&{:error, &1})
+            else
+              changeset
+              |> Ecto.Changeset.put_assoc(:budget, budget)
+              |> Repo.insert()
+            end
+        end
+    end
+  else
+    {:error, changeset}
   end
+end
 
   @doc """
   Updates an allocation belonging to the user in the given scope.
   """
-  def update_allocation(
-        %Scope{user: user},
-        %Allocation{} = allocation,
-        attrs
-      ) do
-    true = allocation.user_id == user.id
+  def update_allocation(%Scope{user: user}, %Allocation{} = allocation, attrs) do
+  true = allocation.user_id == user.id
 
-    allocation
-    |> Allocation.changeset(attrs)
-    |> Repo.update()
+  changeset = Allocation.changeset(allocation, attrs)
+
+  if changeset.valid? do
+    budget_id = allocation.budget_id
+
+    case budget_id do
+      nil ->
+        Repo.update(changeset)
+
+      budget_id ->
+        budget =
+          Budget
+          |> where([budget], budget.id == ^budget_id and budget.user_id == ^user.id)
+          |> Repo.one()
+
+        case budget do
+          nil ->
+            Ecto.Changeset.add_error(
+              changeset,
+              :budget_id,
+              "budget does not belong to this user"
+            )
+            |> then(&{:error, &1})
+
+          budget ->
+            new_amount = Ecto.Changeset.get_field(changeset, :amount)
+
+            total_income =
+              Income
+              |> where([income], income.budget_id == ^budget.id)
+              |> select([income], coalesce(sum(income.amount), ^Decimal.new("0")))
+              |> Repo.one()
+
+            other_allocations =
+              Allocation
+              |> where(
+                [allocation],
+                allocation.budget_id == ^budget.id and allocation.id != ^allocation.id
+              )
+              |> select(
+                [allocation],
+                coalesce(sum(allocation.amount), ^Decimal.new("0"))
+              )
+              |> Repo.one()
+
+            total_after_update =
+              Decimal.add(other_allocations, new_amount)
+
+            if Decimal.compare(total_after_update, total_income) == :gt do
+              Ecto.Changeset.add_error(
+                changeset,
+                :amount,
+                "total allocations cannot exceed total income"
+              )
+              |> then(&{:error, &1})
+            else
+              Repo.update(changeset)
+            end
+        end
+    end
+  else
+    {:error, changeset}
   end
+end
 
   @doc """
   Deletes an allocation belonging to the user in the given scope.
