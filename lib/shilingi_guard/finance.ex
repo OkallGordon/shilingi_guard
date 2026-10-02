@@ -14,6 +14,7 @@ defmodule ShilingiGuard.Finance do
   alias ShilingiGuard.Finance.SpendingRule
   alias ShilingiGuard.Repo
   alias ShilingiGuard.Finance.Transaction
+  alias ShilingiGuard.Finance.Budget
 
   # --------------------
   # Income
@@ -485,5 +486,42 @@ defp period_bounds(
       Decimal.sub(limit_amount, spent),
       Decimal.new("0")
     )
+  end
+
+    # Budgets
+
+  def list_budgets(%Scope{user: user}) do
+    Budget
+    |> where([budget], budget.user_id == ^user.id)
+    |> Repo.all()
+    |> Repo.preload(:user)
+  end
+
+  def get_budget!(%Scope{user: user}, id) do
+    Budget
+    |> where([budget], budget.user_id == ^user.id)
+    |> Repo.get!(id)
+    |> Repo.preload(:user)
+  end
+
+  def create_budget(%Scope{user: user}, attrs \\ %{}) do
+    %Budget{}
+    |> Budget.changeset(attrs)
+    |> Ecto.Changeset.put_assoc(:user, user)
+    |> Repo.insert()
+  end
+
+  def update_budget(%Scope{user: user}, %Budget{} = budget, attrs) do
+    true = budget.user_id == user.id
+    budget |> Budget.changeset(attrs) |> Repo.update()
+  end
+
+  def delete_budget(%Scope{user: user}, %Budget{} = budget) do
+    true = budget.user_id == user.id
+    Repo.delete(budget)
+  end
+
+  def change_budget(%Scope{user: _user}, %Budget{} = budget, attrs \\ %{}) do
+    Budget.changeset(budget, attrs)
   end
 end

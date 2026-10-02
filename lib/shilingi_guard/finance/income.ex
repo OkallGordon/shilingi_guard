@@ -8,6 +8,7 @@ defmodule ShilingiGuard.Finance.Income do
     field :received_on, :date
 
     belongs_to :user, ShilingiGuard.Accounts.User
+    belongs_to :budget, ShilingiGuard.Finance.Budget
 
     timestamps(type: :utc_datetime)
   end

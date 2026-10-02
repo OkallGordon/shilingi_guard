@@ -8,6 +8,8 @@ defmodule ShilingiGuard.Finance.Allocation do
     field :type, :string
 
     belongs_to :user, ShilingiGuard.Accounts.User
+    belongs_to :budget, ShilingiGuard.Finance.Budget
+
     has_many :spending_rules, ShilingiGuard.Finance.SpendingRule
     has_many :transactions, ShilingiGuard.Finance.Transaction
 
