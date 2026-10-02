@@ -56,31 +56,30 @@ defmodule ShilingiGuard.FinanceTest do
     end
 
     test "does not allow income to be attached to another user's budget" do
-  user = AccountsFixtures.user_fixture()
-  scope = ShilingiGuard.Accounts.Scope.for_user(user)
+      user = AccountsFixtures.user_fixture()
+      scope = ShilingiGuard.Accounts.Scope.for_user(user)
 
-  other_user = AccountsFixtures.user_fixture()
-  other_scope = ShilingiGuard.Accounts.Scope.for_user(other_user)
+      other_user = AccountsFixtures.user_fixture()
+      other_scope = ShilingiGuard.Accounts.Scope.for_user(other_user)
 
-  assert {:ok, other_budget} =
-           Finance.create_budget(other_scope, %{
-             name: "Other User Budget",
-             starts_on: ~D[2026-09-01],
-             ends_on: ~D[2026-09-30],
-             status: "active"
-           })
+      assert {:ok, other_budget} =
+               Finance.create_budget(other_scope, %{
+                 name: "Other User Budget",
+                 starts_on: ~D[2026-09-01],
+                 ends_on: ~D[2026-09-30],
+                 status: "active"
+               })
 
-  assert {:error, changeset} =
-           Finance.create_income(scope.user, %{
-             amount: "1000.00",
-             source: "Salary",
-             received_on: ~D[2026-09-30],
-             budget_id: other_budget.id
-           })
+      assert {:error, changeset} =
+               Finance.create_income(scope.user, %{
+                 amount: "1000.00",
+                 source: "Salary",
+                 received_on: ~D[2026-09-30],
+                 budget_id: other_budget.id
+               })
 
-  assert "budget does not belong to this user" in
-           errors_on(changeset).budget_id
-   end
+      assert "budget does not belong to this user" in errors_on(changeset).budget_id
+    end
   end
 
   describe "allocations" do
@@ -158,43 +157,42 @@ defmodule ShilingiGuard.FinanceTest do
     end
 
     test "does not allow total allocations to exceed total income in a budget" do
-  scope = user_scope_fixture()
+      scope = user_scope_fixture()
 
-  assert {:ok, budget} =
-           Finance.create_budget(scope, %{
-             name: "September 2026",
-             starts_on: ~D[2026-09-01],
-             ends_on: ~D[2026-09-30],
-             status: "active"
-           })
+      assert {:ok, budget} =
+               Finance.create_budget(scope, %{
+                 name: "September 2026",
+                 starts_on: ~D[2026-09-01],
+                 ends_on: ~D[2026-09-30],
+                 status: "active"
+               })
 
-  assert {:ok, _income} =
-           Finance.create_income(scope.user, %{
-             amount: "1000.00",
-             source: "Salary",
-             received_on: ~D[2026-09-30],
-             budget_id: budget.id
-           })
+      assert {:ok, _income} =
+               Finance.create_income(scope.user, %{
+                 amount: "1000.00",
+                 source: "Salary",
+                 received_on: ~D[2026-09-30],
+                 budget_id: budget.id
+               })
 
-  assert {:ok, _first_allocation} =
-           Finance.create_allocation(scope, %{
-             name: "Food",
-             type: "spending",
-             amount: "700.00",
-             budget_id: budget.id
-           })
+      assert {:ok, _first_allocation} =
+               Finance.create_allocation(scope, %{
+                 name: "Food",
+                 type: "spending",
+                 amount: "700.00",
+                 budget_id: budget.id
+               })
 
-  assert {:error, changeset} =
-           Finance.create_allocation(scope, %{
-             name: "Transport",
-             type: "spending",
-             amount: "400.00",
-             budget_id: budget.id
-           })
+      assert {:error, changeset} =
+               Finance.create_allocation(scope, %{
+                 name: "Transport",
+                 type: "spending",
+                 amount: "400.00",
+                 budget_id: budget.id
+               })
 
-  assert "total allocations cannot exceed total income" in
-           errors_on(changeset).amount
-end
+      assert "total allocations cannot exceed total income" in errors_on(changeset).amount
+    end
 
     test "update_allocation/3 with invalid scope raises" do
       scope = user_scope_fixture()
@@ -247,136 +245,134 @@ end
     end
 
     test "does not allow an allocation to be attached to another user's budget" do
-  scope = user_scope_fixture()
-  other_scope = user_scope_fixture()
+      scope = user_scope_fixture()
+      other_scope = user_scope_fixture()
 
-  assert {:ok, other_budget} =
-           Finance.create_budget(other_scope, %{
-             name: "Other User Budget",
-             starts_on: ~D[2026-09-01],
-             ends_on: ~D[2026-09-30],
-             status: "active"
-           })
+      assert {:ok, other_budget} =
+               Finance.create_budget(other_scope, %{
+                 name: "Other User Budget",
+                 starts_on: ~D[2026-09-01],
+                 ends_on: ~D[2026-09-30],
+                 status: "active"
+               })
 
-  assert {:error, changeset} =
-           Finance.create_allocation(scope, %{
-             name: "Food",
-             type: "spending",
-             amount: "500.00",
-             budget_id: other_budget.id
-           })
+      assert {:error, changeset} =
+               Finance.create_allocation(scope, %{
+                 name: "Food",
+                 type: "spending",
+                 amount: "500.00",
+                 budget_id: other_budget.id
+               })
 
-  assert "budget does not belong to this user" in
-           errors_on(changeset).budget_id
-   end
+      assert "budget does not belong to this user" in errors_on(changeset).budget_id
+    end
 
-   test "does not allow updating an allocation to exceed total income in a budget" do
-  scope = user_scope_fixture()
+    test "does not allow updating an allocation to exceed total income in a budget" do
+      scope = user_scope_fixture()
 
-  assert {:ok, budget} =
-           Finance.create_budget(scope, %{
-             name: "September 2026",
-             starts_on: ~D[2026-09-01],
-             ends_on: ~D[2026-09-30],
-             status: "active"
-           })
+      assert {:ok, budget} =
+               Finance.create_budget(scope, %{
+                 name: "September 2026",
+                 starts_on: ~D[2026-09-01],
+                 ends_on: ~D[2026-09-30],
+                 status: "active"
+               })
 
-  assert {:ok, _income} =
-           Finance.create_income(scope.user, %{
-             amount: "1000.00",
-             source: "Salary",
-             received_on: ~D[2026-09-30],
-             budget_id: budget.id
-           })
+      assert {:ok, _income} =
+               Finance.create_income(scope.user, %{
+                 amount: "1000.00",
+                 source: "Salary",
+                 received_on: ~D[2026-09-30],
+                 budget_id: budget.id
+               })
 
-  assert {:ok, food} =
-           Finance.create_allocation(scope, %{
-             name: "Food",
-             type: "spending",
-             amount: "600.00",
-             budget_id: budget.id
-           })
+      assert {:ok, food} =
+               Finance.create_allocation(scope, %{
+                 name: "Food",
+                 type: "spending",
+                 amount: "600.00",
+                 budget_id: budget.id
+               })
 
-  assert {:ok, _transport} =
-           Finance.create_allocation(scope, %{
-             name: "Transport",
-             type: "spending",
-             amount: "300.00",
-             budget_id: budget.id
-           })
+      assert {:ok, _transport} =
+               Finance.create_allocation(scope, %{
+                 name: "Transport",
+                 type: "spending",
+                 amount: "300.00",
+                 budget_id: budget.id
+               })
 
-  assert {:error, changeset} =
-           Finance.update_allocation(scope, food, %{
-             amount: "800.00"
-           })
+      assert {:error, changeset} =
+               Finance.update_allocation(scope, food, %{
+                 amount: "800.00"
+               })
 
-  assert "total allocations cannot exceed total income" in
-           errors_on(changeset).amount
+      assert "total allocations cannot exceed total income" in errors_on(changeset).amount
     end
 
     test "allows total allocations to equal total income in a budget" do
-  scope = user_scope_fixture()
+      scope = user_scope_fixture()
 
-  assert {:ok, budget} =
-           Finance.create_budget(scope, %{
-             name: "September 2026",
-             starts_on: ~D[2026-09-01],
-             ends_on: ~D[2026-09-30],
-             status: "active"
-           })
+      assert {:ok, budget} =
+               Finance.create_budget(scope, %{
+                 name: "September 2026",
+                 starts_on: ~D[2026-09-01],
+                 ends_on: ~D[2026-09-30],
+                 status: "active"
+               })
 
-  assert {:ok, _income} =
-           Finance.create_income(scope.user, %{
-             amount: "1000.00",
-             source: "Salary",
-             received_on: ~D[2026-09-30],
-             budget_id: budget.id
-           })
+      assert {:ok, _income} =
+               Finance.create_income(scope.user, %{
+                 amount: "1000.00",
+                 source: "Salary",
+                 received_on: ~D[2026-09-30],
+                 budget_id: budget.id
+               })
 
-  assert {:ok, _allocation} =
-           Finance.create_allocation(scope, %{
-             name: "Monthly Expenses",
-             type: "spending",
-             amount: "1000.00",
-             budget_id: budget.id
-           })
+      assert {:ok, _allocation} =
+               Finance.create_allocation(scope, %{
+                 name: "Monthly Expenses",
+                 type: "spending",
+                 amount: "1000.00",
+                 budget_id: budget.id
+               })
     end
 
     test "sums multiple incomes when checking budget allocation limit" do
-  scope = user_scope_fixture()
+      scope = user_scope_fixture()
 
-  assert {:ok, budget} =
-           Finance.create_budget(scope, %{
-             name: "September 2026",
-             starts_on: ~D[2026-09-01],
-             ends_on: ~D[2026-09-30],
-             status: "active"
-           })
+      assert {:ok, budget} =
+               Finance.create_budget(scope, %{
+                 name: "September 2026",
+                 starts_on: ~D[2026-09-01],
+                 ends_on: ~D[2026-09-30],
+                 status: "active"
+               })
 
-  assert {:ok, _first_income} =
-           Finance.create_income(scope.user, %{
-             amount: "1000.00",
-             source: "Salary",
-             received_on: ~D[2026-09-01],
-             budget_id: budget.id
-           })
+      assert {:ok, _first_income} =
+               Finance.create_income(scope.user, %{
+                 amount: "1000.00",
+                 source: "Salary",
+                 received_on: ~D[2026-09-01],
+                 budget_id: budget.id
+               })
 
-  assert {:ok, _second_income} =
-           Finance.create_income(scope.user, %{
-             amount: "500.00",
-             source: "Side Income",
-             received_on: ~D[2026-09-15],
-             budget_id: budget.id
-           })
+      assert {:ok, _second_income} =
+               Finance.create_income(scope.user, %{
+                 amount: "500.00",
+                 source: "Side Income",
+                 received_on: ~D[2026-09-15],
+                 budget_id: budget.id
+               })
 
-  assert {:ok, _allocation} =
-           Finance.create_allocation(scope, %{
-             name: "Expenses",
-             type: "spending",
-             amount: "1500.00",
-             budget_id: budget.id
-           })
-     end
+      assert {:ok, _allocation} =
+               Finance.create_allocation(scope, %{
+                 name: "Expenses",
+                 type: "spending",
+                 amount: "1500.00",
+                 budget_id: budget.id
+               })
+    end
   end
 
   describe "spending rules" do
@@ -649,65 +645,64 @@ end
     end
   end
 
-   test "does not allow duplicate spending rules for the same allocation and period" do
-  scope = AccountsFixtures.user_scope_fixture()
+  test "does not allow duplicate spending rules for the same allocation and period" do
+    scope = AccountsFixtures.user_scope_fixture()
 
-  allocation = FinanceFixtures.allocation_fixture(scope)
+    allocation = FinanceFixtures.allocation_fixture(scope)
 
-  assert {:ok, _rule} =
-           Finance.create_spending_rule(scope, %{
-             allocation_id: allocation.id,
-             period: "daily",
-             limit_amount: "300.0"
-           })
+    assert {:ok, _rule} =
+             Finance.create_spending_rule(scope, %{
+               allocation_id: allocation.id,
+               period: "daily",
+               limit_amount: "300.0"
+             })
 
-  assert {:error, changeset} =
-           Finance.create_spending_rule(scope, %{
-             allocation_id: allocation.id,
-             period: "daily",
-             limit_amount: "500.0"
-           })
+    assert {:error, changeset} =
+             Finance.create_spending_rule(scope, %{
+               allocation_id: allocation.id,
+               period: "daily",
+               limit_amount: "500.0"
+             })
 
-  assert "already has a spending rule for this period" in
-           errors_on(changeset).allocation_id
+    assert "already has a spending rule for this period" in errors_on(changeset).allocation_id
 
-  assert {:ok, _weekly_rule} =
-           Finance.create_spending_rule(scope, %{
-             allocation_id: allocation.id,
-             period: "weekly",
-             limit_amount: "1500.0"
-           })
-end
+    assert {:ok, _weekly_rule} =
+             Finance.create_spending_rule(scope, %{
+               allocation_id: allocation.id,
+               period: "weekly",
+               limit_amount: "1500.0"
+             })
+  end
 
   describe "transactions" do
     setup do
       %{scope: user_scope_fixture()}
     end
 
- test "does not allow transactions against protected allocations", %{scope: scope} do
-  allocation =
-    FinanceFixtures.allocation_fixture(scope, %{
-      type: "protected",
-      amount: "20000.0"
-    })
+    test "does not allow transactions against protected allocations", %{scope: scope} do
+      allocation =
+        FinanceFixtures.allocation_fixture(scope, %{
+          type: "protected",
+          amount: "20000.0"
+        })
 
-  FinanceFixtures.spending_rule_fixture(scope, %{
-    allocation_id: allocation.id,
-    period: "daily",
-    limit_amount: "300.0"
-  })
+      FinanceFixtures.spending_rule_fixture(scope, %{
+        allocation_id: allocation.id,
+        period: "daily",
+        limit_amount: "300.0"
+      })
 
-  assert {:error, changeset} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "50.0",
-             description: "Attempted protected spending",
-             occurred_at: ~U[2026-09-30 08:00:00Z]
-           })
+      assert {:error, changeset} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "50.0",
+                 description: "Attempted protected spending",
+                 occurred_at: ~U[2026-09-30 08:00:00Z]
+               })
 
-  assert "protected allocations cannot be spent" in
-           errors_on(changeset).allocation_id
-end
+      assert "protected allocations cannot be spent" in errors_on(changeset).allocation_id
+    end
+
     test "lists transactions belonging to the user", %{scope: scope} do
       transaction = transaction_fixture(scope)
 
@@ -1171,141 +1166,143 @@ end
     end
 
     test "daily spending resets at midnight in the user's timezone", %{scope: scope} do
-  user =
-    scope.user
-    |> Ecto.Changeset.change(timezone: "Africa/Nairobi")
-    |> ShilingiGuard.Repo.update!()
+      user =
+        scope.user
+        |> Ecto.Changeset.change(timezone: "Africa/Nairobi")
+        |> ShilingiGuard.Repo.update!()
 
-  scope = %{scope | user: user}
+      scope = %{scope | user: user}
 
-  allocation = allocation_fixture(scope)
+      allocation = allocation_fixture(scope)
 
-  spending_rule_fixture(scope, %{
-    allocation_id: allocation.id,
-    period: "daily",
-    limit_amount: "300.0"
-  })
+      spending_rule_fixture(scope, %{
+        allocation_id: allocation.id,
+        period: "daily",
+        limit_amount: "300.0"
+      })
 
-  assert {:ok, _transaction} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "250.0",
-             description: "Before midnight",
-             occurred_at: ~U[2026-09-30 20:59:00Z]
-           })
+      assert {:ok, _transaction} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "250.0",
+                 description: "Before midnight",
+                 occurred_at: ~U[2026-09-30 20:59:00Z]
+               })
 
-  assert {:ok, _transaction} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "100.0",
-             description: "After midnight",
-             occurred_at: ~U[2026-09-30 21:00:00Z]
-           })
+      assert {:ok, _transaction} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "100.0",
+                 description: "After midnight",
+                 occurred_at: ~U[2026-09-30 21:00:00Z]
+               })
     end
 
     test "daily spending does not reset before midnight in the user's timezone", %{scope: scope} do
-  user =
-    scope.user
-    |> Ecto.Changeset.change(timezone: "Africa/Nairobi")
-    |> ShilingiGuard.Repo.update!()
+      user =
+        scope.user
+        |> Ecto.Changeset.change(timezone: "Africa/Nairobi")
+        |> ShilingiGuard.Repo.update!()
 
-  scope = %{scope | user: user}
+      scope = %{scope | user: user}
 
-  allocation = allocation_fixture(scope)
+      allocation = allocation_fixture(scope)
 
-  spending_rule_fixture(scope, %{
-    allocation_id: allocation.id,
-    period: "daily",
-    limit_amount: "300.0"
-  })
+      spending_rule_fixture(scope, %{
+        allocation_id: allocation.id,
+        period: "daily",
+        limit_amount: "300.0"
+      })
 
-  assert {:ok, _transaction} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "250.0",
-             description: "First transaction",
-             occurred_at: ~U[2026-09-30 20:00:00Z]
-           })
+      assert {:ok, _transaction} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "250.0",
+                 description: "First transaction",
+                 occurred_at: ~U[2026-09-30 20:00:00Z]
+               })
 
-  assert {:error, changeset} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "100.0",
-             description: "Second transaction",
-             occurred_at: ~U[2026-09-30 20:30:00Z]
-           })
+      assert {:error, changeset} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "100.0",
+                 description: "Second transaction",
+                 occurred_at: ~U[2026-09-30 20:30:00Z]
+               })
 
       assert "transaction exceeds the spending limit" in errors_on(changeset).amount
     end
 
     test "weekly spending resets at Monday midnight in the user's timezone", %{scope: scope} do
-     user =
-    scope.user
-    |> Ecto.Changeset.change(timezone: "Africa/Nairobi")
-    |> ShilingiGuard.Repo.update!()
+      user =
+        scope.user
+        |> Ecto.Changeset.change(timezone: "Africa/Nairobi")
+        |> ShilingiGuard.Repo.update!()
 
-  scope = %{scope | user: user}
+      scope = %{scope | user: user}
 
-  allocation = allocation_fixture(scope)
+      allocation = allocation_fixture(scope)
 
-  spending_rule_fixture(scope, %{
-    allocation_id: allocation.id,
-    period: "weekly",
-    limit_amount: "300.0"
-  })
+      spending_rule_fixture(scope, %{
+        allocation_id: allocation.id,
+        period: "weekly",
+        limit_amount: "300.0"
+      })
 
-  # Sunday 20:59 UTC = Sunday 23:59 in Nairobi.
-  assert {:ok, _transaction} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "250.0",
-             description: "Sunday transaction",
-             occurred_at: ~U[2026-09-27 20:59:00Z]
-           })
+      # Sunday 20:59 UTC = Sunday 23:59 in Nairobi.
+      assert {:ok, _transaction} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "250.0",
+                 description: "Sunday transaction",
+                 occurred_at: ~U[2026-09-27 20:59:00Z]
+               })
 
-  # Sunday 21:00 UTC = Monday 00:00 in Nairobi.
-  assert {:ok, _transaction} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "100.0",
-             description: "Monday transaction",
-             occurred_at: ~U[2026-09-27 21:00:00Z]
-           })
+      # Sunday 21:00 UTC = Monday 00:00 in Nairobi.
+      assert {:ok, _transaction} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "100.0",
+                 description: "Monday transaction",
+                 occurred_at: ~U[2026-09-27 21:00:00Z]
+               })
     end
 
-    test "monthly spending resets at the first day of the month in the user's timezone", %{scope: scope} do
+    test "monthly spending resets at the first day of the month in the user's timezone", %{
+      scope: scope
+    } do
       user =
-    scope.user
-    |> Ecto.Changeset.change(timezone: "Africa/Nairobi")
-    |> ShilingiGuard.Repo.update!()
+        scope.user
+        |> Ecto.Changeset.change(timezone: "Africa/Nairobi")
+        |> ShilingiGuard.Repo.update!()
 
-  scope = %{scope | user: user}
+      scope = %{scope | user: user}
 
-  allocation = allocation_fixture(scope)
+      allocation = allocation_fixture(scope)
 
-  spending_rule_fixture(scope, %{
-    allocation_id: allocation.id,
-    period: "monthly",
-    limit_amount: "300.0"
-  })
+      spending_rule_fixture(scope, %{
+        allocation_id: allocation.id,
+        period: "monthly",
+        limit_amount: "300.0"
+      })
 
-  # September 30 20:59 UTC = September 30 23:59 in Nairobi.
-  assert {:ok, _transaction} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "250.0",
-             description: "September transaction",
-             occurred_at: ~U[2026-09-30 20:59:00Z]
-           })
+      # September 30 20:59 UTC = September 30 23:59 in Nairobi.
+      assert {:ok, _transaction} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "250.0",
+                 description: "September transaction",
+                 occurred_at: ~U[2026-09-30 20:59:00Z]
+               })
 
-  # September 30 21:00 UTC = October 1 00:00 in Nairobi.
-  assert {:ok, _transaction} =
-           Finance.create_transaction(scope, %{
-             allocation_id: allocation.id,
-             amount: "100.0",
-             description: "October transaction",
-             occurred_at: ~U[2026-09-30 21:00:00Z]
-           })
+      # September 30 21:00 UTC = October 1 00:00 in Nairobi.
+      assert {:ok, _transaction} =
+               Finance.create_transaction(scope, %{
+                 allocation_id: allocation.id,
+                 amount: "100.0",
+                 description: "October transaction",
+                 occurred_at: ~U[2026-09-30 21:00:00Z]
+               })
     end
   end
 

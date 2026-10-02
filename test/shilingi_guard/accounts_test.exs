@@ -56,31 +56,31 @@ defmodule ShilingiGuard.AccountsTest do
     end
 
     test "accepts supported timezones" do
-     changeset =
-    User.registration_changeset(%User{}, %{
-      full_name: "John Doe",
-      email: "john@example.com",
-      phone_number: "0712345678",
-      password: "valid password 123",
-      timezone: "Africa/Nairobi"
-    })
+      changeset =
+        User.registration_changeset(%User{}, %{
+          full_name: "John Doe",
+          email: "john@example.com",
+          phone_number: "0712345678",
+          password: "valid password 123",
+          timezone: "Africa/Nairobi"
+        })
 
-  assert changeset.valid?
-end
+      assert changeset.valid?
+    end
 
-test "rejects unsupported timezones" do
-  changeset =
-    User.registration_changeset(%User{}, %{
-      full_name: "John Doe",
-      email: "john@example.com",
-      phone_number: "0712345678",
-      password: "valid password 123",
-      timezone: "Nairobi"
-    })
+    test "rejects unsupported timezones" do
+      changeset =
+        User.registration_changeset(%User{}, %{
+          full_name: "John Doe",
+          email: "john@example.com",
+          phone_number: "0712345678",
+          password: "valid password 123",
+          timezone: "Nairobi"
+        })
 
-  refute changeset.valid?
-  assert "is invalid" in errors_on(changeset).timezone
-end
+      refute changeset.valid?
+      assert "is invalid" in errors_on(changeset).timezone
+    end
 
     test "validates email when given" do
       {:error, changeset} = Accounts.register_user(%{email: "not valid"})

@@ -54,6 +54,11 @@ defmodule ShilingiGuardWeb.Router do
       live "/income", IncomeLive.Index, :index
       live "/spending-rules", SpendingRuleLive.Index, :index
       live "/allocations", AllocationLive.Index, :index
+
+      live "/budgets", BudgetLive.Index, :index
+      live "/budgets/new", BudgetLive.Form, :new
+      live "/budgets/:id", BudgetLive.Show, :show
+      live "/budgets/:id/edit", BudgetLive.Form, :edit
     end
 
     post "/users/update-password", UserSessionController, :update_password

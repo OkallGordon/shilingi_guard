@@ -7,7 +7,7 @@ defmodule ShilingiGuard.Finance.BudgetTest do
 
   describe "budgets" do
     setup do
-      user =  AccountsFixtures.user_fixture()
+      user = AccountsFixtures.user_fixture()
       scope = ShilingiGuard.Accounts.Scope.for_user(user)
 
       %{user: user, scope: scope}
@@ -132,8 +132,7 @@ defmodule ShilingiGuard.Finance.BudgetTest do
                  status: "active"
                })
 
-      assert "must be on or after the start date" in
-               errors_on(changeset).ends_on
+      assert "must be on or after the start date" in errors_on(changeset).ends_on
     end
 
     test "rejects an invalid budget status", %{scope: scope} do

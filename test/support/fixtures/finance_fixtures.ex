@@ -5,6 +5,22 @@ defmodule ShilingiGuard.FinanceFixtures do
   """
 
   @doc """
+  Generate a budget.
+  """
+  def budget_fixture(scope, attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
+        name: "some name",
+        starts_on: ~D[2026-10-01],
+        ends_on: ~D[2026-10-31],
+        status: "active"
+      })
+
+    {:ok, budget} = ShilingiGuard.Finance.create_budget(scope, attrs)
+    budget
+  end
+
+  @doc """
   Generate a allocation.
   """
   def allocation_fixture(scope, attrs \\ %{}) do

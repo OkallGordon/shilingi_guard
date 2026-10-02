@@ -18,9 +18,9 @@ defmodule ShilingiGuard.Repo.Migrations.CreateBudgets do
     create index(:budgets, [:user_id])
 
     create constraint(
-      :budgets,
-      :budgets_dates_valid,
-      check: "starts_on <= ends_on"
-    )
+             :budgets,
+             :budgets_dates_valid,
+             check: "starts_on <= ends_on"
+           )
   end
 end
