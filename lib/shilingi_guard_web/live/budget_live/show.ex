@@ -44,21 +44,43 @@ defmodule ShilingiGuardWeb.BudgetLive.Show do
           {@budget.status}
         </:item>
       </.list>
+
+      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-lg bg-white p-5 shadow">
+          <p class="text-sm text-zinc-500">Total income</p>
+          <p class="mt-2 text-2xl font-bold text-green-700">
+            KSh {Decimal.round(@summary.total_income, 2)}
+          </p>
+        </div>
+
+        <div class="rounded-lg bg-white p-5 shadow">
+          <p class="text-sm text-zinc-500">Total allocated</p>
+          <p class="mt-2 text-2xl font-bold text-zinc-900">
+            KSh {Decimal.round(@summary.total_allocated, 2)}
+          </p>
+        </div>
+
+        <div class="rounded-lg bg-white p-5 shadow">
+          <p class="text-sm text-zinc-500">Unallocated money</p>
+          <p class="mt-2 text-2xl font-bold text-blue-700">
+            KSh {Decimal.round(@summary.unallocated, 2)}
+          </p>
+        </div>
+      </div>
     </Layouts.app>
     """
   end
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    budget =
-      Finance.get_budget!(
-        socket.assigns.current_scope,
-        id
-      )
+    scope = socket.assigns.current_scope
+    budget = Finance.get_budget!(scope, id)
+    summary = Finance.budget_summary(scope, budget)
 
     {:ok,
      socket
      |> assign(:page_title, budget.name)
-     |> assign(:budget, budget)}
+     |> assign(:budget, budget)
+     |> assign(:summary, summary)}
   end
 end

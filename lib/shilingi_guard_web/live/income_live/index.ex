@@ -6,13 +6,15 @@ defmodule ShilingiGuardWeb.IncomeLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    user = socket.assigns.current_scope.user
+    scope = socket.assigns.current_scope
+    user = scope.user
 
     changeset = Finance.change_income(%Income{})
 
     {:ok,
      socket
      |> assign(:incomes, Finance.list_incomes(user))
+     |> assign(:budgets, Finance.list_budgets(scope))
      |> assign(:form, to_form(changeset))}
   end
 
@@ -41,7 +43,16 @@ defmodule ShilingiGuardWeb.IncomeLive.Index do
          |> put_flash(:info, "Income recorded successfully.")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+        {:noreply, assign(socket, :form, to_form(changeset, action: :insert))}
     end
+  end
+
+  defp budget_options(budgets) do
+    [
+      {"No budget selected", ""}
+      | Enum.map(budgets, fn budget ->
+          {budget.name, budget.id}
+        end)
+    ]
   end
 end

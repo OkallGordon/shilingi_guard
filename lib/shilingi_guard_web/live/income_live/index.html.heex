@@ -42,6 +42,15 @@
         />
       </div>
 
+      <div class="mt-4">
+        <.input
+          field={@form[:budget_id]}
+          type="select"
+          label="Budget"
+          options={budget_options(@budgets)}
+        />
+      </div>
+
       <div class="mt-6">
         <.button>
           Save Income
@@ -67,9 +76,12 @@
               <p class="font-medium text-zinc-900">
                 {income.source}
               </p>
-
               <p class="text-sm text-zinc-500">
                 Received on {income.received_on}
+              </p>
+
+              <p class="text-sm text-zinc-500">
+                Budget: {if income.budget, do: income.budget.name, else: "No budget assigned"}
               </p>
             </div>
 

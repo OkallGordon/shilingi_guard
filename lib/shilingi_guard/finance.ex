@@ -23,17 +23,22 @@ defmodule ShilingiGuard.Finance do
   @doc """
   Returns all incomes belonging to the given user.
   """
+
   def list_incomes(user) do
     Income
     |> where([income], income.user_id == ^user.id)
     |> Repo.all()
+    |> Repo.preload(:budget)
   end
 
   @doc """
   Creates a new income record for the given user.
   """
   def create_income(user, attrs \\ %{}) do
-    budget_id = Map.get(attrs, "budget_id") || Map.get(attrs, :budget_id)
+    budget_id =
+      %Income{}
+      |> Income.changeset(attrs)
+      |> Ecto.Changeset.get_field(:budget_id)
 
     changeset =
       %Income{}
@@ -630,6 +635,46 @@ defmodule ShilingiGuard.Finance do
   end
 
   # Budgets
+
+  @doc """
+  Calculates the income, allocated amount, and unallocated amount
+  for a budget owned by the current user.
+  """
+  def budget_summary(%Scope{user: user}, %Budget{} = budget) do
+    if budget.user_id != user.id do
+      raise Ecto.NoResultsError, queryable: Budget
+    end
+
+    total_income =
+      Income
+      |> where(
+        [income],
+        income.user_id == ^user.id and income.budget_id == ^budget.id
+      )
+      |> select(
+        [income],
+        coalesce(sum(income.amount), ^Decimal.new("0"))
+      )
+      |> Repo.one()
+
+    total_allocated =
+      Allocation
+      |> where(
+        [allocation],
+        allocation.user_id == ^user.id and allocation.budget_id == ^budget.id
+      )
+      |> select(
+        [allocation],
+        coalesce(sum(allocation.amount), ^Decimal.new("0"))
+      )
+      |> Repo.one()
+
+    %{
+      total_income: total_income,
+      total_allocated: total_allocated,
+      unallocated: Decimal.sub(total_income, total_allocated)
+    }
+  end
 
   def list_budgets(%Scope{user: user}) do
     Budget
