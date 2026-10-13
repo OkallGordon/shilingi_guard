@@ -33,40 +33,55 @@ defmodule ShilingiGuard.Finance do
 
   @doc """
   Creates a new income record for the given user.
+
+  Income assigned to a budget is inserted while holding a lock on
+  that budget, coordinating with budget allocation checks.
   """
   def create_income(user, attrs \\ %{}) do
-    budget_id =
-      %Income{}
-      |> Income.changeset(attrs)
-      |> Ecto.Changeset.get_field(:budget_id)
-
     changeset =
       %Income{}
       |> Income.changeset(attrs)
       |> Ecto.Changeset.put_assoc(:user, user)
 
-    if budget_id do
-      budget =
-        Budget
-        |> where([budget], budget.id == ^budget_id and budget.user_id == ^user.id)
-        |> Repo.one()
+    budget_id = Ecto.Changeset.get_field(changeset, :budget_id)
 
-      case budget do
-        nil ->
-          Ecto.Changeset.add_error(
-            changeset,
-            :budget_id,
-            "budget does not belong to this user"
-          )
-          |> then(&{:error, &1})
+    cond do
+      not changeset.valid? ->
+        {:error, changeset}
 
-        budget ->
+      is_nil(budget_id) ->
+        Repo.insert(changeset)
+
+      true ->
+        Repo.transaction(fn ->
+          budget =
+            Budget
+            |> where([budget], budget.id == ^budget_id and budget.user_id == ^user.id)
+            |> lock("FOR UPDATE")
+            |> Repo.one()
+
+          if is_nil(budget) do
+            Repo.rollback(
+              Ecto.Changeset.add_error(
+                changeset,
+                :budget_id,
+                "budget does not belong to this user"
+              )
+            )
+          end
+
           changeset
           |> Ecto.Changeset.put_assoc(:budget, budget)
           |> Repo.insert()
-      end
-    else
-      Repo.insert(changeset)
+          |> case do
+            {:ok, income} -> income
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+        end)
+        |> case do
+          {:ok, income} -> {:ok, income}
+          {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+        end
     end
   end
 
@@ -103,6 +118,9 @@ defmodule ShilingiGuard.Finance do
 
   @doc """
   Creates a new allocation for the user in the given scope.
+
+  When a budget is selected, the budget row is locked inside a
+  transaction before calculating totals and inserting the allocation.
   """
   def create_allocation(%Scope{user: user}, attrs \\ %{}) do
     budget_id = Map.get(attrs, "budget_id") || Map.get(attrs, :budget_id)
@@ -112,131 +130,171 @@ defmodule ShilingiGuard.Finance do
       |> Allocation.changeset(attrs)
       |> Ecto.Changeset.put_assoc(:user, user)
 
-    if changeset.valid? do
-      case budget_id do
-        nil ->
-          Repo.insert(changeset)
+    cond do
+      not changeset.valid? ->
+        {:error, changeset}
 
-        budget_id ->
+      is_nil(budget_id) ->
+        Repo.insert(changeset)
+
+      true ->
+        Repo.transaction(fn ->
           budget =
             Budget
             |> where([budget], budget.id == ^budget_id and budget.user_id == ^user.id)
+            |> lock("FOR UPDATE")
             |> Repo.one()
 
-          case budget do
-            nil ->
+          if is_nil(budget) do
+            Repo.rollback(
               Ecto.Changeset.add_error(
                 changeset,
                 :budget_id,
                 "budget does not belong to this user"
               )
-              |> then(&{:error, &1})
-
-            budget ->
-              new_amount = Ecto.Changeset.get_field(changeset, :amount)
-
-              total_income =
-                Income
-                |> where([income], income.budget_id == ^budget.id)
-                |> select([income], coalesce(sum(income.amount), ^Decimal.new("0")))
-                |> Repo.one()
-
-              total_allocations =
-                Allocation
-                |> where([allocation], allocation.budget_id == ^budget.id)
-                |> select([allocation], coalesce(sum(allocation.amount), ^Decimal.new("0")))
-                |> Repo.one()
-
-              total_after_allocation =
-                Decimal.add(total_allocations, new_amount)
-
-              if Decimal.compare(total_after_allocation, total_income) == :gt do
-                Ecto.Changeset.add_error(
-                  changeset,
-                  :amount,
-                  "total allocations cannot exceed total income"
-                )
-                |> then(&{:error, &1})
-              else
-                changeset
-                |> Ecto.Changeset.put_assoc(:budget, budget)
-                |> Repo.insert()
-              end
+            )
           end
-      end
-    else
-      {:error, changeset}
+
+          total_income =
+            Income
+            |> where(
+              [income],
+              income.user_id == ^user.id and income.budget_id == ^budget.id
+            )
+            |> select(
+              [income],
+              coalesce(sum(income.amount), ^Decimal.new("0"))
+            )
+            |> Repo.one()
+
+          total_allocations =
+            Allocation
+            |> where(
+              [allocation],
+              allocation.user_id == ^user.id and
+                allocation.budget_id == ^budget.id
+            )
+            |> select(
+              [allocation],
+              coalesce(sum(allocation.amount), ^Decimal.new("0"))
+            )
+            |> Repo.one()
+
+          new_amount = Ecto.Changeset.get_field(changeset, :amount)
+          total_after_allocation = Decimal.add(total_allocations, new_amount)
+
+          if Decimal.compare(total_after_allocation, total_income) == :gt do
+            Repo.rollback(
+              Ecto.Changeset.add_error(
+                changeset,
+                :amount,
+                "total allocations cannot exceed total income"
+              )
+            )
+          end
+
+          changeset
+          |> Ecto.Changeset.put_assoc(:budget, budget)
+          |> Repo.insert()
+          |> case do
+            {:ok, allocation} -> allocation
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+        end)
+        |> case do
+          {:ok, allocation} -> {:ok, allocation}
+          {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+        end
     end
   end
 
   @doc """
   Updates an allocation belonging to the user in the given scope.
+
+  Budgeted allocations are updated under a budget row lock so the
+  income ceiling is checked against current totals.
   """
   def update_allocation(%Scope{user: user}, %Allocation{} = allocation, attrs) do
     true = allocation.user_id == user.id
 
     changeset = Allocation.changeset(allocation, attrs)
 
-    if changeset.valid? do
-      budget_id = allocation.budget_id
+    cond do
+      not changeset.valid? ->
+        {:error, changeset}
 
-      case budget_id do
-        nil ->
-          Repo.update(changeset)
+      is_nil(allocation.budget_id) ->
+        Repo.update(changeset)
 
-        budget_id ->
+      true ->
+        Repo.transaction(fn ->
           budget =
             Budget
-            |> where([budget], budget.id == ^budget_id and budget.user_id == ^user.id)
+            |> where(
+              [budget],
+              budget.id == ^allocation.budget_id and budget.user_id == ^user.id
+            )
+            |> lock("FOR UPDATE")
             |> Repo.one()
 
-          case budget do
-            nil ->
+          if is_nil(budget) do
+            Repo.rollback(
               Ecto.Changeset.add_error(
                 changeset,
                 :budget_id,
                 "budget does not belong to this user"
               )
-              |> then(&{:error, &1})
-
-            budget ->
-              new_amount = Ecto.Changeset.get_field(changeset, :amount)
-
-              total_income =
-                Income
-                |> where([income], income.budget_id == ^budget.id)
-                |> select([income], coalesce(sum(income.amount), ^Decimal.new("0")))
-                |> Repo.one()
-
-              other_allocations =
-                Allocation
-                |> where(
-                  [allocation],
-                  allocation.budget_id == ^budget.id and allocation.id != ^allocation.id
-                )
-                |> select(
-                  [allocation],
-                  coalesce(sum(allocation.amount), ^Decimal.new("0"))
-                )
-                |> Repo.one()
-
-              total_after_update =
-                Decimal.add(other_allocations, new_amount)
-
-              if Decimal.compare(total_after_update, total_income) == :gt do
-                Ecto.Changeset.add_error(
-                  changeset,
-                  :amount,
-                  "total allocations cannot exceed total income"
-                )
-                |> then(&{:error, &1})
-              else
-                Repo.update(changeset)
-              end
+            )
           end
-      end
-    else
-      {:error, changeset}
+
+          total_income =
+            Income
+            |> where(
+              [income],
+              income.user_id == ^user.id and income.budget_id == ^budget.id
+            )
+            |> select(
+              [income],
+              coalesce(sum(income.amount), ^Decimal.new("0"))
+            )
+            |> Repo.one()
+
+          other_allocations =
+            Allocation
+            |> where(
+              [item],
+              item.user_id == ^user.id and
+                item.budget_id == ^budget.id and
+                item.id != ^allocation.id
+            )
+            |> select(
+              [item],
+              coalesce(sum(item.amount), ^Decimal.new("0"))
+            )
+            |> Repo.one()
+
+          new_amount = Ecto.Changeset.get_field(changeset, :amount)
+          total_after_update = Decimal.add(other_allocations, new_amount)
+
+          if Decimal.compare(total_after_update, total_income) == :gt do
+            Repo.rollback(
+              Ecto.Changeset.add_error(
+                changeset,
+                :amount,
+                "total allocations cannot exceed total income"
+              )
+            )
+          end
+
+          case Repo.update(changeset) do
+            {:ok, updated_allocation} -> updated_allocation
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+        end)
+        |> case do
+          {:ok, updated_allocation} -> {:ok, updated_allocation}
+          {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+        end
     end
   end
 
